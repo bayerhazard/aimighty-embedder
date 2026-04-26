@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+.env
+ragflow-embedder-models.tar.gz

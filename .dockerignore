@@ -1,0 +1,5 @@
+.env
+.git
+*.md
+*.tar.gz
+*-deployment.yaml

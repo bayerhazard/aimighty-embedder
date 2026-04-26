@@ -1,0 +1,54 @@
+image:
+  repository: aimighty-embedder
+  tag: latest
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+containerPort: 9997
+
+resources:
+  limits:
+    cpu: "8"
+    memory: "16Gi"
+  requests:
+    cpu: "2"
+    memory: "4Gi"
+
+env:
+  MODEL_NAME: "aimighty-embedding-4b"
+  HF_MODEL_ID: "Qwen/Qwen3-Embedding-4B"
+  PORT: "9997"
+  MALLOC_ARENA_MAX: "1"
+  OV_CACHE_DIR: "/tmp/ov_cache"
+  MODEL_CACHE_DIR: "/models_cache"
+  HUGGING_FACE_HUB_TOKEN: ""
+
+securityContext: {}
+
+volumes:
+  modelCache:
+    hostPath: /app/cache/aimighty-embedder-models
+    mountPath: /models_cache
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 9997
+  initialDelaySeconds: 180
+  periodSeconds: 30
+  failureThreshold: 5
+  timeoutSeconds: 5
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 9997
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  failureThreshold: 12
+  timeoutSeconds: 5
+
+service:
+  type: ClusterIP
+  port: 9997

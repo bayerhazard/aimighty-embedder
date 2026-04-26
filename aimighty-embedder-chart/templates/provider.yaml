@@ -1,0 +1,24 @@
+{{- if .Values.provider }}
+{{- range .Values.provider }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $.Release.Name }}-{{ .name }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    app: {{ $.Release.Name }}-embedder
+    provider: {{ .name }}
+spec:
+  type: ClusterIP
+  ports:
+    {{- range .paths }}
+    - port: {{ $.Values.service.port }}
+      targetPort: {{ $.Values.containerPort }}
+      protocol: TCP
+      name: {{ . | replace "/" "" | replace "*" "" | lower }}
+    {{- end }}
+  selector:
+    app: {{ $.Release.Name }}-embedder
+{{- end }}
+{{- end }}

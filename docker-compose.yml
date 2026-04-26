@@ -1,0 +1,38 @@
+services:
+  embedder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: aimighty-embedder:latest
+    container_name: aimighty-embedder
+    restart: unless-stopped
+    ports:
+      - "${PORT:-9997}:9997"
+    environment:
+      - MODEL_NAME=${MODEL_NAME:-aimighty-embedding-4b}
+      - HF_MODEL_ID=${HF_MODEL_ID:-Qwen/Qwen3-Embedding-4B}
+      - PORT=${PORT:-9997}
+      - MALLOC_ARENA_MAX=${MALLOC_ARENA_MAX:-1}
+      - OV_CACHE_DIR=/tmp/ov_cache
+      - MODEL_CACHE_DIR=/models_cache
+      - HUGGING_FACE_HUB_TOKEN=${HUGGING_FACE_HUB_TOKEN:-}
+    volumes:
+      - model-cache:/models_cache
+    deploy:
+      resources:
+        limits:
+          cpus: "8"
+          memory: 16G
+        reservations:
+          cpus: "2"
+          memory: 4G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9997/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 180s
+
+volumes:
+  model-cache:
+    driver: local

@@ -1,0 +1,94 @@
+olaresManifest.version: '0.10.0'
+olaresManifest.type: app
+metadata:
+  name: aimighty-embedder
+  title: Aimighty Embedder
+  description: OpenAI-compatible embedding API powered by OpenVINO on Intel iGPU (Qwen3-Embedding-4B INT8)
+  icon: https://app.cdn.olares.com/appstore/default/defaulticon.webp
+  version: 0.1.0
+  categories:
+    - AI
+    - Developer Tools
+entrances:
+  - name: aimighty-embedder
+    port: 9997
+    title: Aimighty Embedder
+    host: aimighty-embedder
+    authLevel: internal
+    invisible: false
+permission:
+  appCache: true
+  appData: true
+provider:
+  - name: aimighty-embedder-api
+    entrance: aimighty-embedder
+    paths:
+      - "/v1/*"
+      - "/health"
+    verbs:
+      - "*"
+spec:
+  versionName: '0.1.0'
+  fullDescription: |
+    Aimighty Embedder is an OpenAI-compatible embedding service optimized for Intel Core Ultra processors with Meteor Lake iGPU.
+    
+    Features:
+    - OpenAI-compatible API (/v1/embeddings, /v1/models)
+    - OpenVINO INT8 quantized Qwen3-Embedding-4B model
+    - iGPU optimization: THROUGHPUT hint, 2 streams, FP16, Large Allocations
+    - Async endpoints with lock against race conditions
+    - Automatic CPU fallback on iGPU failure
+    - Automatic model download and conversion on first start
+  upgradeDescription: |
+    Initial release of Aimighty Embedder for Olares.
+  developer: Aimighty
+  locale:
+    - en
+  supportArch:
+    - amd64
+  requiredCpu: 2
+  requiredMemory: 4Gi
+  limitedCpu: 8
+  limitedMemory: 16Gi
+options:
+  dependencies:
+    - name: olares
+      type: system
+      version: '>=1.12.2-0'
+  allowMultipleInstall: false
+envs:
+  - envName: HF_MODEL_ID
+    required: false
+    default: "Qwen/Qwen3-Embedding-4B"
+    type: string
+    editable: true
+    description: "HuggingFace model ID to download and convert"
+  - envName: HUGGING_FACE_HUB_TOKEN
+    required: false
+    type: password
+    editable: true
+    description: "HuggingFace token (optional, for gated models)"
+  - envName: PERFORMANCE_HINT
+    required: false
+    default: "THROUGHPUT"
+    type: string
+    editable: true
+    description: "OpenVINO performance hint (THROUGHPUT or LATENCY)"
+  - envName: NUM_STREAMS
+    required: false
+    default: "2"
+    type: int
+    editable: true
+    description: "Number of parallel OpenVINO execution streams"
+  - envName: GPU_ENABLE_LARGE_ALLOCATIONS
+    required: false
+    default: "YES"
+    type: string
+    editable: true
+    description: "Enable large allocations for unified memory (YES/NO)"
+  - envName: INFERENCE_PRECISION_HINT
+    required: false
+    default: "f16"
+    type: string
+    editable: true
+    description: "Inference precision hint (f16, f32, bf16)"

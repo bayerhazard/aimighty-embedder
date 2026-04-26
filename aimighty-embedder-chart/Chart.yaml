@@ -1,0 +1,18 @@
+apiVersion: v2
+name: aimighty-embedder
+description: Aimighty OpenVINO Embedder - OpenAI compatible embedding API with Intel GPU acceleration
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - ai
+  - embedding
+  - openvino
+  - rag
+  - intel
+home: https://github.com/aimighty
+sources:
+  - https://github.com/aimighty/embedder
+maintainers:
+  - name: Aimighty
+    email: admin@aimighty.local

@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-embedder
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Release.Name }}-embedder
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-embedder
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-embedder
+        applications.app.bytetrade.io/name: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: embedder
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - python3
+            - /app/server.py
+          ports:
+            - containerPort: {{ .Values.containerPort }}
+              protocol: TCP
+          env:
+            {{- range $key, $value := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: model-cache
+              mountPath: {{ .Values.volumes.modelCache.mountPath }}
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+      volumes:
+        - name: model-cache
+          hostPath:
+            path: {{ .Values.volumes.modelCache.hostPath }}
+            type: DirectoryOrCreate
