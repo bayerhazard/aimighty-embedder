@@ -100,9 +100,27 @@ patch_network_policy() {
         >/dev/null 2>&1 || true
 }
 
+ensure_embedder_pod_has_patched_config() {
+    local NS="embedder-dev-aimighty"
+    local LABEL="io.kompose.service=embedder"
+    local POD_IP
+    POD_IP=$(kubectl -n "$NS" get pods -l "$LABEL" -o jsonpath='{.items[0].status.podIP}' 2>/dev/null || echo "")
+    if [ -z "$POD_IP" ]; then return; fi
+
+    local HTTP_CODE
+    HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "http://${POD_IP}:9997/health" 2>/dev/null || echo "000")
+
+    if [ "$HTTP_CODE" = "401" ]; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Embedder pod returning 401 — restarting to pick up patched config"
+        kubectl -n "$NS" delete pod -l "$LABEL" --grace-period=5 >/dev/null 2>&1
+        sleep 25
+    fi
+}
+
 while true; do
     patch_idle_timeout
     patch_embedder_auth
     patch_network_policy
+    ensure_embedder_pod_has_patched_config
     sleep 5
 done
