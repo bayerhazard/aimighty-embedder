@@ -1,17 +1,10 @@
 #!/bin/bash
 # Olares Sidecar Envoy ConfigMap Patcher
 #
-# Patches applied every 5 seconds (Olares app-service controller resets on reconcile):
-#   1. idle_timeout: 10s -> 3600s (prevents killing long-running embedding requests)
-#   2. ext_authz removal from embedder sidecar (allows RAGFlow API access without Authelia)
-#   3. NetworkPolicy: allows ragflow-aimighty -> embedder-dev-aimighty ingress
-#
-# The idle_timeout 10s default is hardcoded in:
-#   framework/app-service/pkg/sandbox/sidecar/envoy.go (lines 246, 657)
-# The ext_authz filter enforces Authelia browser-auth on ALL inbound requests,
-#   which blocks service-to-service API calls (RAGFlow sends Bearer token, not cookies).
-# The NetworkPolicy is enforced by the Olares DevBox controller and removes
-#   custom ingress rules within ~2 seconds.
+# Patches idle_timeout from 10s to 3600s every 5 seconds.
+# The Olares app-service controller resets the cluster idle_timeout to 10s
+# on every reconcile (hardcoded in app-service/pkg/sandbox/sidecar/envoy.go).
+# This kills long-running embedding requests. No per-app override exists.
 #
 # Install via systemd: see scripts/olares-sidecar-patcher.service
 
@@ -22,7 +15,7 @@ NAMESPACES_AND_CONFIGMAPS=(
     "embedder-dev-aimighty:olares-sidecar-config-embedder-dev"
 )
 
-patch_idle_timeout() {
+while true; do
     for ENTRY in "${NAMESPACES_AND_CONFIGMAPS[@]}"; do
         NS="${ENTRY%%:*}"
         CM="${ENTRY##*:}"
@@ -44,83 +37,5 @@ cm["metadata"].pop("annotations", None)
 print(json.dumps(cm))
 ' | kubectl replace -f - >/dev/null 2>&1 || echo "  patch failed, will retry"
     done
-}
-
-patch_embedder_auth() {
-    local NS="embedder-dev-aimighty"
-    local CM="olares-sidecar-config-embedder-dev"
-    CURRENT=$(kubectl get configmap "$CM" -n "$NS" -o jsonpath='{.data.envoy\.yaml}' 2>/dev/null || echo "")
-    if [ -z "$CURRENT" ]; then return; fi
-    if ! echo "$CURRENT" | grep -q "ext_authz"; then return; fi
-
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Removing ext_authz from $NS/$CM"
-    kubectl get configmap "$CM" -n "$NS" -o json | python3 -c '
-import json, sys, yaml
-
-cm = json.load(sys.stdin)
-config = yaml.safe_load(cm["data"]["envoy.yaml"])
-
-for listener in config.get("static_resources", {}).get("listeners", []):
-    if listener.get("name") == "listener_0":
-        for fc in listener.get("filter_chains", []):
-            for filt in fc.get("filters", []):
-                tc = filt.get("typed_config", {})
-                if "http_filters" in tc:
-                    tc["http_filters"] = [
-                        hf for hf in tc["http_filters"]
-                        if hf.get("name") != "envoy.filters.http.ext_authz"
-                    ]
-                if "route_config" in tc:
-                    for vh in tc["route_config"].get("virtual_hosts", []):
-                        vh.pop("typed_per_filter_config", None)
-
-config["static_resources"]["clusters"] = [
-    c for c in config["static_resources"]["clusters"]
-    if c.get("name") != "authelia"
-]
-
-cm["data"]["envoy.yaml"] = yaml.dump(config, default_flow_style=False, allow_unicode=True)
-for k in ["resourceVersion", "uid", "creationTimestamp", "generation", "managedFields"]:
-    cm["metadata"].pop(k, None)
-cm["metadata"].pop("annotations", None)
-print(json.dumps(cm))
-' | kubectl replace -f - >/dev/null 2>&1 || echo "  patch failed, will retry"
-}
-
-patch_network_policy() {
-    local NS="embedder-dev-aimighty"
-    local NP="app-np"
-    CURRENT=$(kubectl get networkpolicy "$NP" -n "$NS" -o json 2>/dev/null || echo "")
-    if [ -z "$CURRENT" ]; then return; fi
-    if echo "$CURRENT" | grep -q "ragflow-aimighty"; then return; fi
-
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Adding ragflow-aimighty to NetworkPolicy $NS/$NP"
-    kubectl -n "$NS" patch networkpolicy "$NP" --type=json \
-        -p '[{"op":"add","path":"/spec/ingress/0/from/-","value":{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"ragflow-aimighty"}}}}]' \
-        >/dev/null 2>&1 || true
-}
-
-ensure_embedder_pod_has_patched_config() {
-    local NS="embedder-dev-aimighty"
-    local LABEL="io.kompose.service=embedder"
-    local POD_IP
-    POD_IP=$(kubectl -n "$NS" get pods -l "$LABEL" -o jsonpath='{.items[0].status.podIP}' 2>/dev/null || echo "")
-    if [ -z "$POD_IP" ]; then return; fi
-
-    local HTTP_CODE
-    HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "http://${POD_IP}:9997/health" 2>/dev/null || echo "000")
-
-    if [ "$HTTP_CODE" = "401" ]; then
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Embedder pod returning 401 — restarting to pick up patched config"
-        kubectl -n "$NS" delete pod -l "$LABEL" --grace-period=5 >/dev/null 2>&1
-        sleep 25
-    fi
-}
-
-while true; do
-    patch_idle_timeout
-    patch_embedder_auth
-    patch_network_policy
-    ensure_embedder_pod_has_patched_config
     sleep 5
 done

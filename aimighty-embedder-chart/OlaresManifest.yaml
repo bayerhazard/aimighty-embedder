@@ -14,7 +14,7 @@ entrances:
     port: 9997
     title: Aimighty Embedder
     host: aimighty-embedder
-    authLevel: public
+    authLevel: internal
     invisible: false
 permission:
   appCache: true
