@@ -1,6 +1,6 @@
 import sys, os
 sys.path.insert(0, "/pypackages")
-import time, logging, asyncio, ctypes
+import time, logging, asyncio, threading, ctypes
 from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import List, Union
@@ -32,7 +32,7 @@ def _build_ov_config():
 app = FastAPI()
 _model = None
 _tokenizer = None
-_model_lock = asyncio.Lock()
+_infer_lock = threading.Lock()
 _model_ready = False
 
 def get_model():
@@ -56,7 +56,6 @@ def get_model():
     ov_config = _build_ov_config()
     log.info("OpenVINO config: %s", ov_config)
 
-    # Try requested device, fall back to CPU if GPU fails
     device_to_use = OV_DEVICE
     try:
         _model = OVModelForFeatureExtraction.from_pretrained(
@@ -107,13 +106,14 @@ def models():
         }]
     }
 
-@app.post("/v1/embeddings")
-async def embed(req: EmbReq):
+def _run_inference(texts):
+    """Synchronous inference — runs in a worker thread to keep the event loop free.
+    The threading.Lock serialises access so the OpenVINO engine never sees
+    concurrent infer requests (prevents 'Infer Request is busy')."""
     import torch
 
-    async with _model_lock:
+    with _infer_lock:
         model, tok = get_model()
-        texts = [req.input] if isinstance(req.input, str) else req.input
         log.info("Embedding %d text(s)", len(texts))
 
         enc = tok(texts, padding=True, truncation=True, max_length=512, return_tensors="pt")
@@ -129,6 +129,12 @@ async def embed(req: EmbReq):
         total = int(enc["input_ids"].numel())
 
     ctypes.CDLL("libc.so.6").malloc_trim(0)
+    return vecs, total
+
+@app.post("/v1/embeddings")
+async def embed(req: EmbReq):
+    texts = [req.input] if isinstance(req.input, str) else req.input
+    vecs, total = await asyncio.to_thread(_run_inference, texts)
 
     return {
         "object": "list",
