@@ -8,9 +8,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     /etc/apt/sources.list.d/intel-gpu-noble.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-    intel-opencl-icd=24.39.31294.21-1032~24.04 \
-    libze-intel-gpu1=24.39.31294.21-1032~24.04 \
-    libze1=1.17.30429.2-1001~24.04 && \
+    intel-opencl-icd \
+    libze-intel-gpu1 \
+    libze1 && \
     rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir \
