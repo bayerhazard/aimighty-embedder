@@ -1,5 +1,18 @@
 FROM python:3.11-slim
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget gnupg2 ca-certificates && \
+    wget -qO - https://repositories.intel.com/gpu/intel-graphics.key | \
+    gpg --dearmor --output /usr/share/keyrings/intel-graphics-archive-keyring.gpg && \
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/intel-graphics-archive-keyring.gpg] https://repositories.intel.com/gpu/ubuntu noble unified" > \
+    /etc/apt/sources.list.d/intel-gpu-noble.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+    intel-opencl-icd=24.39.31294.21-1032~24.04 \
+    libze-intel-gpu1=24.39.31294.21-1032~24.04 \
+    libze1=1.17.30429.2-1001~24.04 && \
+    rm -rf /var/lib/apt/lists/*
+
 RUN pip install --no-cache-dir \
     fastapi uvicorn[standard] optimum-intel[openvino] \
     transformers>=4.45.0 torch>=2.4.0 tokenizers>=0.21 sentencepiece

@@ -10,6 +10,9 @@ CACHE_DIR="${MODEL_CACHE_DIR:-/models_cache}"
 MODEL_SUBDIR="${MODEL_NAME:-aimighty-embedding-4b}"
 MODEL_PATH="${CACHE_DIR}/${MODEL_SUBDIR}"
 HF_MODEL_ID="${HF_MODEL_ID:-Qwen/Qwen3-Embedding-4B}"
+OV_DEVICE="${OV_DEVICE:-CPU}"
+export OV_DEVICE
+export GPU_ENABLE_LARGE_ALLOCATIONS="${GPU_ENABLE_LARGE_ALLOCATIONS:-NO}"
 
 echo "[1/3] Checking model cache..."
 echo "  Cache directory: ${CACHE_DIR}"
@@ -50,7 +53,7 @@ echo ""
 echo "[3/3] Starting Aimighty Embedder Server..."
 echo "  Model:  ${MODEL_PATH}"
 echo "  Port:   ${PORT:-9997}"
-echo "  Device: CPU"
+echo "  Device: ${OV_DEVICE}"
 echo "============================================"
 echo ""
 

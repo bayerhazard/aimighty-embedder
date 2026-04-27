@@ -3,9 +3,9 @@ olaresManifest.type: app
 metadata:
   name: aimighty-embedder
   title: Aimighty Embedder
-  description: OpenAI-compatible embedding API powered by OpenVINO on Intel iGPU (Qwen3-Embedding-4B INT8)
+  description: OpenAI-compatible embedding API powered by OpenVINO on Intel Arrow Lake-S iGPU (Qwen3-Embedding-4B INT8)
   icon: https://app.cdn.olares.com/appstore/default/defaulticon.webp
-  version: 0.1.0
+  version: 0.1.2
   categories:
     - AI
     - Developer Tools
@@ -28,9 +28,9 @@ provider:
     verbs:
       - "*"
 spec:
-  versionName: '0.1.0'
+  versionName: '0.1.2'
   fullDescription: |
-    Aimighty Embedder is an OpenAI-compatible embedding service optimized for Intel Core Ultra processors with Meteor Lake iGPU.
+    Aimighty Embedder is an OpenAI-compatible embedding service optimized for Intel Arrow Lake-S iGPU.
     
     Features:
     - OpenAI-compatible API (/v1/embeddings, /v1/models)
@@ -39,17 +39,36 @@ spec:
     - Async endpoints with lock against race conditions
     - Automatic CPU fallback on iGPU failure
     - Automatic model download and conversion on first start
+    
+    Hardware Requirements:
+    - Intel GPU with OpenCL support (Arrow Lake-S, Meteor Lake, etc.)
+    - Intel GPU Device Plugin installed (gpu.intel.com/i915)
+    - SR-IOV disabled on host for Level Zero compatibility
+    - Minimum 16 GB RAM, 24 GB recommended
+    
+    Driver Note:
+    - Intel GPU drivers pinned to OpenCL 24.39.x (avoids IGC 25.18.x crash on Arrow Lake)
+    
+    Olares Sidecar Note:
+    - apiTimeout: 3600 sets per-route HTTP timeout (override for default 15s)
+    - For long batch embeddings (e.g. RAGFlow with 100+ chunks), the cluster
+      idle_timeout (hardcoded to 10s in Olares) must be patched separately via
+      the sidecar patcher script in scripts/install-sidecar-patcher.sh
   upgradeDescription: |
-    Initial release of Aimighty Embedder for Olares.
+    v0.1.2: apiTimeout=3600 to fix RAGFlow embedding timeouts on large batches.
+    v0.1.1: GPU configuration with Intel Device Plugin, Arrow Lake-S support, IGC driver pinning.
+    v0.1.0: Initial release of Aimighty Embedder for Olares.
   developer: Aimighty
   locale:
     - en
   supportArch:
     - amd64
   requiredCpu: 2
-  requiredMemory: 4Gi
-  limitedCpu: 8
-  limitedMemory: 16Gi
+  requiredMemory: 16Gi
+  limitedCpu: 4
+  limitedMemory: 24Gi
+  requiredGpu: 1
+  apiTimeout: 3600
 options:
   dependencies:
     - name: olares
@@ -68,6 +87,12 @@ envs:
     type: password
     editable: true
     description: "HuggingFace token (optional, for gated models)"
+  - envName: OV_DEVICE
+    required: false
+    default: "GPU"
+    type: string
+    editable: true
+    description: "OpenVINO device (GPU or CPU)"
   - envName: PERFORMANCE_HINT
     required: false
     default: "THROUGHPUT"

@@ -1,0 +1,17 @@
+[Unit]
+Description=Olares Sidecar Envoy ConfigMap Patcher (idle_timeout 10s -> 3600s)
+After=k3s.service kubelet.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=olares
+Environment=KUBECONFIG=/home/olares/.kube/config
+ExecStart=/usr/local/bin/olares-sidecar-patcher.sh
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

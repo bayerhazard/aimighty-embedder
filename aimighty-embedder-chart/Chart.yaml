@@ -2,8 +2,8 @@ apiVersion: v2
 name: aimighty-embedder
 description: Aimighty OpenVINO Embedder - OpenAI compatible embedding API with Intel GPU acceleration
 type: application
-version: 0.1.0
-appVersion: "0.1.0"
+version: 0.1.2
+appVersion: "0.1.2"
 keywords:
   - ai
   - embedding

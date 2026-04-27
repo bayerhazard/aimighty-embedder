@@ -1,161 +1,134 @@
+# Aimighty Embedder - Standalone Kubernetes Deployment
+# Target: Olares cluster with Intel Arrow Lake-S iGPU
+# Image: ghcr.io/bayerhazard/almighty-embedder:igpu-v4
+#
+# Prerequisites:
+#   - Intel GPU Device Plugin installed (gpu.intel.com/i915)
+#   - SR-IOV disabled on host (sriov_numvfs=0)
+#   - Node labeled with kubernetes.io/hostname=olares
+#
+# GPU Config:
+#   - Device: GPU (OpenVINO)
+#   - Performance Hint: THROUGHPUT
+#   - Streams: 2
+#   - Precision: FP16
+#   - Large Allocations: YES
+#   - Drivers: Intel OpenCL 24.39.x (pinned, avoids IGC 25.18.x crash)
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  annotations:
-    bytetrade.io/suspend-by: app-service
-    bytetrade.io/suspend-cause: user operate
-    deployment.kubernetes.io/revision: "66"
-    kubectl.kubernetes.io/last-applied-configuration: |
-      {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"almighty-embedder","namespace":"ragflow-bayerhazard"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"almighty-embedder"}},"strategy":{"type":"Recreate"},"template":{"metadata":{"labels":{"app":"almighty-embedder"}},"spec":{"containers":[{"command":["python3","/app/server.py"],"env":[{"name":"MODEL_DIR","value":"/models"},{"name":"MODEL_NAME","value":"qwen3-embedding"},{"name":"PORT","value":"9997"},{"name":"PYTHONPATH","value":"/pypackages"}],"image":"python:3.11-slim","livenessProbe":{"failureThreshold":5,"httpGet":{"path":"/health","port":9997},"initialDelaySeconds":120,"periodSeconds":30},"name":"embedder","ports":[{"containerPort":9997}],"readinessProbe":{"failureThreshold":12,"httpGet":{"path":"/health","port":9997},"initialDelaySeconds":60,"periodSeconds":10},"resources":{"limits":{"cpu":"4","memory":"8Gi"},"requests":{"cpu":"1","memory":"4Gi"}},"volumeMounts":[{"mountPath":"/models","name":"model-storage","readOnly":true},{"mountPath":"/app","name":"server-script"},{"mountPath":"/pypackages","name":"pypackages"}]}],"initContainers":[{"command":["sh","-c","pip install -q fastapi uvicorn[standard] optimum-intel[openvino] transformers==4.41.2 torch==2.3.0 sentencepiece -t /pypackages\n"],"image":"python:3.11-slim","name":"install-deps","volumeMounts":[{"mountPath":"/pypackages","name":"pypackages"}]}],"securityContext":{"supplementalGroups":[44,993]},"volumes":[{"hostPath":{"path":"/olares/userdata/Cache/bayerhazard/almighty-embedder","type":"Directory"},"name":"model-storage"},{"configMap":{"name":"almighty-embedder-server"},"name":"server-script"},{"emptyDir":{},"name":"pypackages"}]}}}}
-  creationTimestamp: "2026-03-30T18:23:46Z"
-  generation: 90
-  name: almighty-embedder
-  namespace: ragflow-bayerhazard
-  resourceVersion: "36224880"
-  uid: 1859c449-66d9-4c5d-b6f6-7685830ae087
+  name: embedder-dev
+  namespace: embedder-dev-aimighty
+  labels:
+    app.kubernetes.io/managed-by: Helm
+    applications.app.bytetrade.io/name: embedder-dev
+    applications.app.bytetrade.io/owner: aimighty
+    io.kompose.service: embedder
 spec:
-  progressDeadlineSeconds: 600
   replicas: 1
-  revisionHistoryLimit: 10
+  revisionHistoryLimit: 1
   selector:
     matchLabels:
-      app: almighty-embedder
+      io.kompose.service: embedder
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
   template:
     metadata:
-      annotations:
-        kubectl.kubernetes.io/restartedAt: "2026-04-18T19:28:34Z"
-      creationTimestamp: null
       labels:
-        app: almighty-embedder
-        applications.app.bytetrade.io/name: ragflow
-        applications.app.bytetrade.io/owner: bayerhazard
-        applications.app.bytetrade.io/raw-app-name: ragflow
+        applications.app.bytetrade.io/name: embedder-dev
+        applications.app.bytetrade.io/owner: aimighty
+        applications.app.bytetrade.io/raw-app-name: embedder-dev
         io.bytetrade.app: "true"
+        io.kompose.service: embedder
+      annotations:
+        applications.app.bytetrade.io/studio-expose-ports: ""
     spec:
-      containers:
-      - command:
-        - python3
-        - /tmp/server.py
-        env:
-        - name: MODEL_DIR
-          value: /models
-        - name: MODEL_NAME
-          value: qwen3-embedding
-        - name: PORT
-          value: "9997"
-        - name: PYTHONPATH
-          value: /pypackages
-        - name: OV_CACHE_DIR
-          value: /tmp/ov_cache
-        - name: MALLOC_ARENA_MAX
-          value: "1"
-        image: ghcr.io/bayerhazard/almighty-embedder:latest
-        imagePullPolicy: Always
-        livenessProbe:
-          failureThreshold: 5
-          httpGet:
-            path: /health
-            port: 9997
-            scheme: HTTP
-          initialDelaySeconds: 120
-          periodSeconds: 30
-          successThreshold: 1
-          timeoutSeconds: 1
-        name: embedder
-        ports:
-        - containerPort: 9997
-          protocol: TCP
-        readinessProbe:
-          failureThreshold: 12
-          httpGet:
-            path: /health
-            port: 9997
-            scheme: HTTP
-          initialDelaySeconds: 60
-          periodSeconds: 10
-          successThreshold: 1
-          timeoutSeconds: 1
-        resources:
-          limits:
-            cpu: "8"
-            memory: 16Gi
-          requests:
-            cpu: "2"
-            memory: 4Gi
-        securityContext:
-          capabilities: {}
-          privileged: false
-        terminationMessagePath: /dev/termination-log
-        terminationMessagePolicy: File
-        volumeMounts:
-        - mountPath: /models
-          name: model-storage
-          readOnly: true
-        - mountPath: /app
-          name: server-script
-        - mountPath: /pypackages
-          name: pypackages
-        - mountPath: /tmp/server.py
-          name: server-code
-          subPath: server.py
-      dnsPolicy: ClusterFirst
+      nodeSelector:
+        kubernetes.io/hostname: olares
       imagePullSecrets:
-      - name: ghcr-secret
-      initContainers:
-      - command:
-        - sh
-        - -c
-        - pip install -q fastapi uvicorn[standard] optimum[openvino] transformers>=4.45.0
-          torch>=2.4.0 tokenizers>=0.21 sentencepiece Pillow -t /pypackages
-        env:
-        - name: OV_CACHE_DIR
-          value: /tmp/ov_cache
-        image: python:3.11-slim
-        imagePullPolicy: IfNotPresent
-        name: install-deps
-        resources: {}
-        terminationMessagePath: /dev/termination-log
-        terminationMessagePolicy: File
-        volumeMounts:
-        - mountPath: /pypackages
-          name: pypackages
-      restartPolicy: Always
-      schedulerName: default-scheduler
-      securityContext: {}
-      terminationGracePeriodSeconds: 30
+        - name: ghcr-secret
+      securityContext:
+        supplementalGroups:
+          - 44    # video group (card devices)
+          - 994   # render group (renderD devices)
+      containers:
+        - name: embedder
+          image: ghcr.io/bayerhazard/almighty-embedder:igpu-v4
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9997
+              protocol: TCP
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: Etc/UTC
+            - name: PORT
+              value: "9997"
+            - name: MODEL_NAME
+              value: aimighty-embedding-4b
+            - name: HF_MODEL_ID
+              value: Qwen/Qwen3-Embedding-4B
+            - name: HUGGING_FACE_HUB_TOKEN
+              value: ""  # Set via secret or env
+            - name: MODEL_CACHE_DIR
+              value: /models_cache
+            - name: OV_CACHE_DIR
+              value: /tmp/ov_cache
+            - name: OV_DEVICE
+              value: GPU
+            - name: PERFORMANCE_HINT
+              value: THROUGHPUT
+            - name: NUM_STREAMS
+              value: "2"
+            - name: INFERENCE_PRECISION_HINT
+              value: f16
+            - name: GPU_ENABLE_LARGE_ALLOCATIONS
+              value: "YES"
+          resources:
+            requests:
+              cpu: "2"
+              memory: 16Gi
+              gpu.intel.com/i915: "1"
+            limits:
+              cpu: "4"
+              memory: 24Gi
+              gpu.intel.com/i915: "1"
+          volumeMounts:
+            - name: model-cache
+              mountPath: /models_cache
+            - name: dri-devices
+              mountPath: /dev/dri
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9997
+              scheme: HTTP
+            initialDelaySeconds: 180
+            periodSeconds: 30
+            failureThreshold: 5
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9997
+              scheme: HTTP
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            failureThreshold: 12
+            timeoutSeconds: 5
       volumes:
-      - hostPath:
-          path: /olares/userdata/Cache/bayerhazard/almighty-embedder
-          type: Directory
-        name: model-storage
-      - configMap:
-          defaultMode: 420
-          name: almighty-embedder-server
-        name: server-script
-      - emptyDir: {}
-        name: pypackages
-      - configMap:
-          defaultMode: 420
-          name: embedder-server
-        name: server-code
-status:
-  availableReplicas: 1
-  conditions:
-  - lastTransitionTime: "2026-04-02T12:02:19Z"
-    lastUpdateTime: "2026-04-18T19:33:00Z"
-    message: ReplicaSet "almighty-embedder-5c85b749d7" has successfully progressed.
-    reason: NewReplicaSetAvailable
-    status: "True"
-    type: Progressing
-  - lastTransitionTime: "2026-04-18T20:32:33Z"
-    lastUpdateTime: "2026-04-18T20:32:33Z"
-    message: Deployment has minimum availability.
-    reason: MinimumReplicasAvailable
-    status: "True"
-    type: Available
-  observedGeneration: 90
-  readyReplicas: 1
-  replicas: 1
-  updatedReplicas: 1
+        - name: model-cache
+          hostPath:
+            path: /olares/userdata/Cache/pvc-appcache-aimighty-cwximf94nlprzimu/embedder-dev/embedder/aimighty-embedder-models
+            type: DirectoryOrCreate
+        - name: dri-devices
+          hostPath:
+            path: /dev/dri
+            type: Directory

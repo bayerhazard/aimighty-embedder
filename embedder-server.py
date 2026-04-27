@@ -13,6 +13,22 @@ MODEL_DIR  = os.getenv("MODEL_DIR", "/models_cache/aimighty-embedding-4b")
 MODEL_NAME = os.getenv("MODEL_NAME", "aimighty-embedding-4b")
 PORT       = int(os.getenv("PORT", "9997"))
 
+OV_DEVICE = os.getenv("OV_DEVICE", "CPU")
+OV_PERFORMANCE_HINT = os.getenv("PERFORMANCE_HINT", "LATENCY")
+OV_NUM_STREAMS = os.getenv("NUM_STREAMS", "1")
+OV_INFERENCE_PRECISION = os.getenv("INFERENCE_PRECISION_HINT", "f16")
+OV_GPU_LARGE_ALLOC = os.getenv("GPU_ENABLE_LARGE_ALLOCATIONS", "NO")
+
+def _build_ov_config():
+    cfg = {
+        "PERFORMANCE_HINT": OV_PERFORMANCE_HINT,
+        "NUM_STREAMS": OV_NUM_STREAMS,
+    }
+    if OV_DEVICE.upper() == "GPU":
+        cfg["INFERENCE_PRECISION_HINT"] = OV_INFERENCE_PRECISION
+        cfg["GPU_ENABLE_LARGE_ALLOCATIONS"] = OV_GPU_LARGE_ALLOC
+    return cfg
+
 app = FastAPI()
 _model = None
 _tokenizer = None
@@ -35,18 +51,34 @@ def get_model():
     _tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR)
     log.info("Tokenizer loaded successfully.")
 
-    log.info("Loading OpenVINO model on CPU...")
+    log.info("Loading OpenVINO model on %s...", OV_DEVICE)
 
-    _model = OVModelForFeatureExtraction.from_pretrained(
-        MODEL_DIR,
-        device="CPU",
-        compile=True,
-        ov_config={
-            "PERFORMANCE_HINT": "LATENCY",
-            "NUM_STREAMS": "1",
-        }
-    )
-    log.info("Model loaded on CPU successfully.")
+    ov_config = _build_ov_config()
+    log.info("OpenVINO config: %s", ov_config)
+
+    # Try requested device, fall back to CPU if GPU fails
+    device_to_use = OV_DEVICE
+    try:
+        _model = OVModelForFeatureExtraction.from_pretrained(
+            MODEL_DIR,
+            device=device_to_use,
+            compile=True,
+            ov_config=ov_config,
+        )
+        log.info("Model loaded on %s successfully.", device_to_use)
+    except RuntimeError as e:
+        if "GPU" in str(e) and device_to_use.upper() == "GPU":
+            log.warning("GPU not available, falling back to CPU: %s", e)
+            device_to_use = "CPU"
+            _model = OVModelForFeatureExtraction.from_pretrained(
+                MODEL_DIR,
+                device="CPU",
+                compile=True,
+                ov_config={"PERFORMANCE_HINT": "LATENCY", "NUM_STREAMS": "1"},
+            )
+            log.info("Model loaded on CPU (fallback) successfully.")
+        else:
+            raise
 
     _model_ready = True
     log.info("=" * 50)

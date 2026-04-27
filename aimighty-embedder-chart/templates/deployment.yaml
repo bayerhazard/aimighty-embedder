@@ -5,26 +5,49 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: {{ .Release.Name }}-embedder
+    applications.app.bytetrade.io/name: {{ .Release.Name }}
+    applications.app.bytetrade.io/owner: {{ .Release.Namespace | trimSuffix "-aimighty" }}
+    io.kompose.service: embedder
 spec:
   replicas: {{ .Values.replicaCount }}
-  strategy:
-    type: Recreate
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit | default 1 }}
   selector:
     matchLabels:
-      app: {{ .Release.Name }}-embedder
+      io.kompose.service: embedder
+  strategy:
+    type: {{ .Values.strategy.type | default "RollingUpdate" }}
+    {{- if eq .Values.strategy.type "RollingUpdate" }}
+    rollingUpdate:
+      maxSurge: {{ .Values.strategy.rollingUpdate.maxSurge | default "25%" }}
+      maxUnavailable: {{ .Values.strategy.rollingUpdate.maxUnavailable | default "25%" }}
+    {{- end }}
   template:
     metadata:
       labels:
         app: {{ .Release.Name }}-embedder
         applications.app.bytetrade.io/name: {{ .Release.Name }}
+        applications.app.bytetrade.io/owner: {{ .Release.Namespace | trimSuffix "-aimighty" }}
+        applications.app.bytetrade.io/raw-app-name: {{ .Release.Name }}
+        io.bytetrade.app: "true"
+        io.kompose.service: embedder
+      annotations:
+        applications.app.bytetrade.io/studio-expose-ports: ""
     spec:
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      securityContext:
+        supplementalGroups:
+          {{- toYaml .Values.supplementalGroups | nindent 10 }}
       containers:
         - name: embedder
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command:
-            - python3
-            - /app/server.py
           ports:
             - containerPort: {{ .Values.containerPort }}
               protocol: TCP
@@ -38,6 +61,8 @@ spec:
           volumeMounts:
             - name: model-cache
               mountPath: {{ .Values.volumes.modelCache.mountPath }}
+            - name: dri-devices
+              mountPath: /dev/dri
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
@@ -47,3 +72,7 @@ spec:
           hostPath:
             path: {{ .Values.volumes.modelCache.hostPath }}
             type: DirectoryOrCreate
+        - name: dri-devices
+          hostPath:
+            path: /dev/dri
+            type: Directory

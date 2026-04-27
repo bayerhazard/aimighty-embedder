@@ -3,29 +3,41 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: aimighty-embedder:latest
+    image: ghcr.io/bayerhazard/almighty-embedder:igpu-v4
     container_name: aimighty-embedder
     restart: unless-stopped
     ports:
       - "${PORT:-9997}:9997"
     environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-Etc/UTC}
       - MODEL_NAME=${MODEL_NAME:-aimighty-embedding-4b}
       - HF_MODEL_ID=${HF_MODEL_ID:-Qwen/Qwen3-Embedding-4B}
       - PORT=${PORT:-9997}
-      - MALLOC_ARENA_MAX=${MALLOC_ARENA_MAX:-1}
       - OV_CACHE_DIR=/tmp/ov_cache
       - MODEL_CACHE_DIR=/models_cache
       - HUGGING_FACE_HUB_TOKEN=${HUGGING_FACE_HUB_TOKEN:-}
+      - OV_DEVICE=${OV_DEVICE:-GPU}
+      - PERFORMANCE_HINT=${PERFORMANCE_HINT:-THROUGHPUT}
+      - NUM_STREAMS=${NUM_STREAMS:-2}
+      - INFERENCE_PRECISION_HINT=${INFERENCE_PRECISION_HINT:-f16}
+      - GPU_ENABLE_LARGE_ALLOCATIONS=${GPU_ENABLE_LARGE_ALLOCATIONS:-YES}
+      - MALLOC_ARENA_MAX=${MALLOC_ARENA_MAX:-1}
     volumes:
       - model-cache:/models_cache
+      - /dev/dri:/dev/dri
+    group_add:
+      - "44"
+      - "994"
     deploy:
       resources:
         limits:
-          cpus: "8"
-          memory: 16G
+          cpus: "4"
+          memory: 24G
         reservations:
           cpus: "2"
-          memory: 4G
+          memory: 16G
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9997/health"]
       interval: 30s

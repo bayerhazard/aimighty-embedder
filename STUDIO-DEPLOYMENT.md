@@ -1,95 +1,100 @@
 # Aimighty Embedder - Studio Deployment Guide
 
-## Voraussetzungen
+## Prerequisites
 
-1. Olares 1.12.2 oder neuer
-2. Docker Image `aimighty-embedder:latest` muss auf dem Olares-Host verfuegbar sein
-3. Intel GPU Device Plugin muss installiert sein (gpu.intel.com/i915)
+1. Olares 1.12.2 or newer
+2. Docker image `ghcr.io/bayerhazard/almighty-embedder:igpu-v4` available on Olares host
+3. Intel GPU Device Plugin installed (gpu.intel.com/i915)
+4. SR-IOV disabled on host (`sriov_numvfs=0` on the iGPU PCI device)
 
-## Schritt 1: Docker Image auf den Olares-Host bringen
+## Step 1: Get Docker Image to Olares Host
 
-Da der Mac kein Docker hat, muss das Image auf dem Olares-Host gebaut werden. Kopiere die Dateien vom Mac auf den Olares-Host:
+The image must be built or imported on the Olares host:
 
 ```bash
-# Auf dem Mac:
-scp -r "/Users/marc/Documents/Olares/RAG/Embedder und Reranker/Embedder" marc@<olares-ip>:~/aimighty-embedder/
-
-# Auf dem Olares-Host:
+# Option A: Build from source on Olares host
 cd ~/aimighty-embedder
-docker build -t aimighty-embedder:latest .
+docker build -t ghcr.io/bayerhazard/almighty-embedder:igpu-v4 .
+
+# Option B: Import into containerd (for K3s)
+docker save ghcr.io/bayerhazard/almighty-embedder:igpu-v4 | \
+  ctr -n k8s.io images import -
 ```
 
-## Schritt 2: Studio oeffnen
+## Step 2: Open Studio
 
-1. Olares Web-UI oeffnen
-2. **Studio** aus dem App-Menue starten
-3. **Create a new application** klicken
+1. Open Olares Web UI
+2. Launch **Studio** from the app menu
+3. Click **Create a new application**
 
-## Schritt 3: App erstellen
+## Step 3: Create App
 
-1. **App name**: `aimighty-embedder` eingeben
-2. **Confirm** klicken
-3. **Port your own container to Olares** auswaehlen
+1. **App name**: `embedder-dev`
+2. Click **Confirm**
+3. Select **Port your own container to Olares**
 
-## Schritt 4: Image, Port und Instance Spec konfigurieren
+## Step 4: Configure Image, Port, and Instance Spec
 
-| Feld | Wert |
-|------|------|
-| **Image** | `aimighty-embedder:latest` |
-| **Port** | `9997` (nur Container-Port, Studio managed Host-Port automatisch) |
+| Field | Value |
+|-------|-------|
+| **Image** | `ghcr.io/bayerhazard/almighty-embedder:igpu-v4` |
+| **Port** | `9997` (container port only, Studio manages host port) |
 | **Instance Specifications - CPU** | `2` core |
-| **Instance Specifications - Memory** | `4` Gi |
+| **Instance Specifications - Memory** | `16` Gi |
 
-**GPU aktivieren:**
-- Unter Instance Specifications die **GPU**-Option aktivieren
-- GPU Vendor: **Intel** auswaehlen
+**Enable GPU:**
+- Under Instance Specifications, enable the **GPU** option
+- GPU Vendor: **Intel**
 
-## Schritt 5: Environment Variables hinzufuegen
+## Step 5: Add Environment Variables
 
-Klicke **Add** und trage folgende Key-Value-Paare ein:
+Click **Add** and enter these key-value pairs:
 
 | Key | Value |
 |-----|-------|
+| `PUID` | `1000` |
+| `PGID` | `1000` |
+| `TZ` | `Etc/UTC` |
 | `MODEL_NAME` | `aimighty-embedding-4b` |
 | `HF_MODEL_ID` | `Qwen/Qwen3-Embedding-4B` |
 | `PORT` | `9997` |
+| `MODEL_CACHE_DIR` | `/models_cache` |
+| `OV_CACHE_DIR` | `/tmp/ov_cache` |
+| `OV_DEVICE` | `GPU` |
 | `PERFORMANCE_HINT` | `THROUGHPUT` |
 | `NUM_STREAMS` | `2` |
-| `GPU_ENABLE_LARGE_ALLOCATIONS` | `YES` |
 | `INFERENCE_PRECISION_HINT` | `f16` |
+| `GPU_ENABLE_LARGE_ALLOCATIONS` | `YES` |
 | `MALLOC_ARENA_MAX` | `1` |
-| `OV_CACHE_DIR` | `/tmp/ov_cache` |
-| `MODEL_CACHE_DIR` | `/models_cache` |
-| `HUGGING_FACE_HUB_TOKEN` | *(leer, oder dein HF Token)* |
+| `HUGGING_FACE_HUB_TOKEN` | *(empty, or your HF token)* |
 
-## Schritt 6: Storage Volume hinzufuegen
+## Step 6: Add Storage Volume
 
-Das Modell-Cache-Volume muss persistent sein:
+The model cache volume must be persistent:
 
-1. **Add** neben **Storage Volume** klicken
-2. **Host path**: `/app/cache` auswaehlen, dann `/aimighty-embedder-models` eingeben
-3. **Mount path**: `/models_cache` eingeben
-4. **Submit** klicken
+1. Click **Add** next to **Storage Volume**
+2. **Host path**: Select `/app/cache`, then enter `/aimighty-embedder-models`
+3. **Mount path**: Enter `/models_cache`
+4. Click **Submit**
 
-> Hinweis: `/app/cache` wird von Olares verwaltet. Der tatsaechliche Pfad auf dem Host ist `/Cache/<device-name>/studio/aimighty-embedder/aimighty-embedder-models`.
+> Note: `/app/cache` is managed by Olares. The actual host path is `/Cache/<device-name>/studio/embedder-dev/embedder/aimighty-embedder-models`.
 
-## Schritt 7: App erstellen und deployen
+## Step 7: Create and Deploy
 
-1. **Create** klicken
-2. Studio generiert die Package-Files und deployed die App automatisch
-3. Status in der unteren Leiste beobachten
+1. Click **Create**
+2. Studio generates package files and deploys automatically
+3. Monitor status in the bottom bar
 
-## Schritt 8: Deployment ueberpruefen
+## Step 8: Verify Deployment
 
-Beim ersten Start wird das Modell heruntergeladen und konvertiert (~10-30 Min):
+On first start, the model is downloaded and converted (~10-30 min):
 
 ```bash
-# Logs verfolgen:
-docker compose logs -f aimighty-embedder
-# oder im Studio: App -> Deployment Details -> Logs
+# Follow logs:
+kubectl logs -n embedder-dev-aimighty -l app=embedder-dev -c embedder -f
 ```
 
-Du solltest diese Ausgabe sehen:
+You should see:
 
 ```
 ============================================
@@ -97,60 +102,111 @@ Du solltest diese Ausgabe sehen:
 ============================================
 
 [1/3] Checking model cache...
-  [!] Model not found in cache.
-
-[2/3] Downloading and converting Qwen/Qwen3-Embedding-4B to OpenVINO INT8...
-  This may take 10-30 minutes depending on network speed.
-
-  [OK] Model conversion successful.
+  [OK] OpenVINO model found in cache.
+  Skipping download and conversion.
 
 [3/3] Starting Aimighty Embedder Server...
+  Device: GPU
 ```
 
-## Schritt 9: API testen
+## Step 9: Test API
 
-Nach erfolgreichem Start:
+After successful start:
 
 ```bash
-# Health Check:
+# Health check:
 curl http://<olares-ip>:<auto-port>/health
 # {"status": "ready"}
 
-# Embedding testen:
+# Test embedding:
 curl http://<olares-ip>:<auto-port>/v1/embeddings \
   -H "Content-Type: application/json" \
-  -d '{"input": "Hallo Welt", "model": "aimighty-embedding-4b"}'
+  -d '{"input": "Hello world", "model": "aimighty-embedding-4b"}'
 ```
 
-> Den auto-port findest Du im Studio unter der App -> Entrance.
+> Find the auto-port in Studio under the app -> Entrance.
 
 ## Troubleshooting
 
-| Problem | Loesung |
-|---------|---------|
-| **Pod startet nicht** | Pruefe Logs im Studio -> Deployment Details |
-| **GPU nicht verfuegbar** | Intel GPU Device Plugin muss installiert sein |
-| **OOMKilled** | Memory Limit im Studio auf 16 Gi erhoehen |
-| **Health zeigt "loading"** | Modell wird noch heruntergeladen/konvertiert - warten |
-| **"Infer Request is busy"** | Container im Studio neustarten |
+| Problem | Solution |
+|---------|----------|
+| **Pod won't start** | Check logs in Studio -> Deployment Details |
+| **GPU not available** | Intel GPU Device Plugin must be installed |
+| **OOMKilled** | Increase memory limit in Studio to 24 Gi |
+| **Health shows "loading"** | Model is still downloading/converting - wait |
+| **"Infer Request is busy"** | Restart container in Studio |
+| **GPU crash on model load** | Ensure IGC drivers are 24.39.x (not 25.18.x) |
+| **SR-IOV enabled** | Disable: `echo 0 > /sys/bus/pci/devices/0000:00:02.0/sriov_numvfs` |
+| **`upstream request timeout` from RAGFlow** | Two-part fix needed: set `apiTimeout: 3600` + install sidecar patcher (see below) |
 
-## Alternative: Chart Deployment (fuer Produktion)
+## Sidecar Timeout Fix (CRITICAL for RAGFlow integration)
 
-Fuer produktive Nutzung mit vollem Olares-Feature-Set (GPU-Passthrough, Security Context, Provider API):
+The Olares per-app Envoy sidecar has two timeouts that kill long embedding requests:
 
-```bash
-# Chart-Verzeichnis auf Olares-Host kopieren
-scp -r aimighty-embedder-chart/ marc@<olares-ip>:~/
+1. **Route timeout** (default 15s) - controls per-request HTTP timeout
+2. **Cluster `idle_timeout`** (default 10s, **hardcoded** in `app-service`) - kills idle pooled connections during long inference
 
-# Auf Olares-Host:
-cd ~/aimighty-embedder-chart
-# Chart via Olares CLI oder Market hochladen
+### Step 1: Set apiTimeout in OlaresManifest.yaml
+
+Already configured in `aimighty-embedder-chart/OlaresManifest.yaml`:
+```yaml
+spec:
+  apiTimeout: 3600
 ```
 
-Das Chart (`aimighty-embedder-chart/`) enthaelt:
-- `Chart.yaml` - Chart Metadaten
-- `OlaresManifest.yaml` - Olares App Konfiguration mit GPU, Envs, Provider
-- `values.yaml` - Default Werte mit GPU Resource Limits
-- `templates/deployment.yaml` - Kubernetes Deployment mit /dev/dri Mount
-- `templates/service.yaml` - ClusterIP Service
-- `templates/provider.yaml` - Provider API fuer andere Apps
+For an existing deployment, patch the ApplicationManager:
+```bash
+kubectl get applicationmanager <app-name> -n <namespace> -o json | \
+  python3 -c "
+import json, sys
+am = json.load(sys.stdin)
+cfg = json.loads(am['spec']['config'])
+cfg['ApiTimeout'] = 3600
+am['spec']['config'] = json.dumps(cfg)
+print(json.dumps(am))
+" | kubectl replace -f -
+```
+
+### Step 2: Install the sidecar patcher (systemd)
+
+```bash
+cd scripts/
+bash install-sidecar-patcher.sh
+```
+
+This patches `idle_timeout: 10s -> 3600s` in `olares-sidecar-config-*` ConfigMaps every 5 seconds, since the `app-service` controller hardcodes 10s with no override available.
+
+### Step 3: Restart pods
+
+```bash
+kubectl rollout restart deployment/<embedder-deployment> -n <embedder-namespace>
+kubectl rollout restart deployment/ragflow -n <ragflow-namespace>
+```
+
+### Verify
+
+Test from inside the ragflow pod with a 359-chunk batch:
+```bash
+# Should complete in ~75s without "upstream request timeout"
+```
+
+## Alternative: Chart Deployment (Production)
+
+For production use with full Olares feature set (GPU passthrough, security context, provider API):
+
+```bash
+# Copy chart directory to Olares host
+scp -r aimighty-embedder-chart/ user@<olares-ip>:~/
+
+# On Olares host:
+cd ~/aimighty-embedder-chart
+# Upload chart via Olares CLI or Market
+```
+
+The chart (`aimighty-embedder-chart/`) contains:
+- `Chart.yaml` - Chart metadata
+- `OlaresManifest.yaml` - Olares app configuration with GPU, envs, provider
+- `values.yaml` - Default values with GPU resource limits
+- `templates/deployment.yaml` - Kubernetes deployment with /dev/dri mount
+- `templates/service.yaml` - ClusterIP service
+- `templates/provider.yaml` - Provider API for other apps

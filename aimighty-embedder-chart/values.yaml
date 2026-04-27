@@ -1,27 +1,53 @@
 image:
-  repository: aimighty-embedder
-  tag: latest
+  repository: ghcr.io/bayerhazard/almighty-embedder
+  tag: igpu-v4
   pullPolicy: IfNotPresent
 
+imagePullSecrets:
+  - name: ghcr-secret
+
 replicaCount: 1
+revisionHistoryLimit: 1
 
 containerPort: 9997
 
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: "25%"
+    maxUnavailable: "25%"
+
+nodeSelector:
+  kubernetes.io/hostname: olares
+
+supplementalGroups:
+  - 44    # video group (card devices)
+  - 994   # render group (renderD devices)
+
 resources:
   limits:
-    cpu: "8"
-    memory: "16Gi"
+    cpu: "4"
+    memory: "24Gi"
+    gpu.intel.com/i915: "1"
   requests:
     cpu: "2"
-    memory: "4Gi"
+    memory: "16Gi"
+    gpu.intel.com/i915: "1"
 
 env:
+  PUID: "1000"
+  PGID: "1000"
+  TZ: Etc/UTC
   MODEL_NAME: "aimighty-embedding-4b"
   HF_MODEL_ID: "Qwen/Qwen3-Embedding-4B"
   PORT: "9997"
-  MALLOC_ARENA_MAX: "1"
-  OV_CACHE_DIR: "/tmp/ov_cache"
   MODEL_CACHE_DIR: "/models_cache"
+  OV_CACHE_DIR: "/tmp/ov_cache"
+  OV_DEVICE: "GPU"
+  PERFORMANCE_HINT: "THROUGHPUT"
+  NUM_STREAMS: "2"
+  INFERENCE_PRECISION_HINT: "f16"
+  GPU_ENABLE_LARGE_ALLOCATIONS: "YES"
   HUGGING_FACE_HUB_TOKEN: ""
 
 securityContext: {}
@@ -35,6 +61,7 @@ livenessProbe:
   httpGet:
     path: /health
     port: 9997
+    scheme: HTTP
   initialDelaySeconds: 180
   periodSeconds: 30
   failureThreshold: 5
@@ -44,6 +71,7 @@ readinessProbe:
   httpGet:
     path: /health
     port: 9997
+    scheme: HTTP
   initialDelaySeconds: 60
   periodSeconds: 10
   failureThreshold: 12
