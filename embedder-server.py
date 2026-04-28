@@ -128,11 +128,10 @@ def _run_inference(texts):
         vecs = (pooled / norms).tolist()
         total = int(enc["input_ids"].numel())
 
-    ctypes.CDLL("libc.so.6", mode=ctypes.RTLD_GLOBAL).malloc_trim(0)
-except (AttributeError, OSError):
-    # malloc_trim is a GNU extension, not available on all libc implementations
-    # (e.g., Alpine/musl). The memory will be reclaimed when the GC runs or on exit.
-    pass
+    try:
+        ctypes.CDLL("libc.so.6", mode=ctypes.RTLD_GLOBAL).malloc_trim(0)
+    except (AttributeError, OSError):
+        pass
     return vecs, total
 
 @app.post("/v1/embeddings")
