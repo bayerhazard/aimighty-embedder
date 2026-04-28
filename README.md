@@ -130,7 +130,7 @@ Configure provider in GPUStack:
 
 ## Docker Image
 
-- **Registry**: `ghcr.io/bayerhazard/almighty-embedder`
+- **Registry**: `ghcr.io/bayerhazard/aimighty-embedder`
 - **Tag**: `igpu-v4`
 - **GPU Drivers**: Intel OpenCL 24.39.31294.21 (pinned)
 

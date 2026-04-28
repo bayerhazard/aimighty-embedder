@@ -3,7 +3,7 @@
 ## Prerequisites
 
 1. Olares 1.12.2 or newer
-2. Docker image `ghcr.io/bayerhazard/almighty-embedder:igpu-v4` available on Olares host
+2. Docker image `ghcr.io/bayerhazard/aimighty-embedder:igpu-v4` available on Olares host
 3. Intel GPU Device Plugin installed (gpu.intel.com/i915)
 4. SR-IOV disabled on host (`sriov_numvfs=0` on the iGPU PCI device)
 
@@ -14,10 +14,10 @@ The image must be built or imported on the Olares host:
 ```bash
 # Option A: Build from source on Olares host
 cd ~/aimighty-embedder
-docker build -t ghcr.io/bayerhazard/almighty-embedder:igpu-v4 .
+docker build -t ghcr.io/bayerhazard/aimighty-embedder:igpu-v4 .
 
 # Option B: Import into containerd (for K3s)
-docker save ghcr.io/bayerhazard/almighty-embedder:igpu-v4 | \
+docker save ghcr.io/bayerhazard/aimighty-embedder:igpu-v4 | \
   ctr -n k8s.io images import -
 ```
 
@@ -37,7 +37,7 @@ docker save ghcr.io/bayerhazard/almighty-embedder:igpu-v4 | \
 
 | Field | Value |
 |-------|-------|
-| **Image** | `ghcr.io/bayerhazard/almighty-embedder:igpu-v4` |
+| **Image** | `ghcr.io/bayerhazard/aimighty-embedder:igpu-v4` |
 | **Port** | `9997` (container port only, Studio manages host port) |
 | **Instance Specifications - CPU** | `2` core |
 | **Instance Specifications - Memory** | `16` Gi |

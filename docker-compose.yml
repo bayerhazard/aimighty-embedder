@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: ghcr.io/bayerhazard/almighty-embedder:igpu-v4
+    image: ghcr.io/bayerhazard/aimighty-embedder:latest
     container_name: aimighty-embedder
     restart: unless-stopped
     ports:

@@ -1,6 +1,6 @@
 # Aimighty Embedder - Standalone Kubernetes Deployment
 # Target: Olares cluster with Intel Arrow Lake-S iGPU
-# Image: ghcr.io/bayerhazard/almighty-embedder:igpu-v4
+# Image: ghcr.io/bayerhazard/aimighty-embedder:latest
 #
 # Prerequisites:
 #   - Intel GPU Device Plugin installed (gpu.intel.com/i915)
@@ -57,7 +57,7 @@ spec:
           - 994   # render group (renderD devices)
       containers:
         - name: embedder
-          image: ghcr.io/bayerhazard/almighty-embedder:igpu-v4
+          image: ghcr.io/bayerhazard/aimighty-embedder:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9997
