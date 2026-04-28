@@ -2,6 +2,7 @@ import sys, os
 sys.path.insert(0, "/pypackages")
 import time, logging, asyncio, threading, ctypes
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List, Union
 import uvicorn
@@ -34,6 +35,7 @@ _model = None
 _tokenizer = None
 _infer_lock = threading.Lock()
 _model_ready = False
+_concurrency_limit = asyncio.Semaphore(2)
 
 def get_model():
     global _model, _tokenizer, _model_ready
@@ -137,7 +139,19 @@ def _run_inference(texts):
 @app.post("/v1/embeddings")
 async def embed(req: EmbReq):
     texts = [req.input] if isinstance(req.input, str) else req.input
-    vecs, total = await asyncio.to_thread(_run_inference, texts)
+
+    async with _concurrency_limit:
+        try:
+            vecs, total = await asyncio.wait_for(
+                asyncio.to_thread(_run_inference, texts),
+                timeout=120.0,
+            )
+        except asyncio.TimeoutError:
+            log.error("Inference timeout after 120s for %d text(s)", len(texts))
+            return JSONResponse(
+                status_code=504,
+                content={"error": "inference timeout", "detail": "Request exceeded 120s limit"},
+            )
 
     return {
         "object": "list",

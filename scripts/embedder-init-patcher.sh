@@ -5,11 +5,14 @@ set -e
 
 NAMESPACE="embedding-dev-aimighty"
 CONFIGMAP="olares-sidecar-config-embedding-dev"
-MAX_RETRIES=30
 RETRY_INTERVAL=2
 
 echo "[INIT] Starting Envoy timeout patcher..."
 
+# Wait for sidecar to create the ConfigMap
+sleep 15
+
+MAX_RETRIES=90
 retry=0
 while [ $retry -lt $MAX_RETRIES ]; do
     # Check if ConfigMap exists
