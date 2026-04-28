@@ -6,6 +6,9 @@ echo "  Aimighty OpenVINO Embedder"
 echo "============================================"
 echo ""
 
+echo "[0/4] Patching Envoy timeouts..."
+/app/init-patcher.sh || true
+
 CACHE_DIR="${MODEL_CACHE_DIR:-/models_cache}"
 MODEL_SUBDIR="${MODEL_NAME:-aimighty-embedding-4b}"
 MODEL_PATH="${CACHE_DIR}/${MODEL_SUBDIR}"
@@ -14,7 +17,7 @@ OV_DEVICE="${OV_DEVICE:-CPU}"
 export OV_DEVICE
 export GPU_ENABLE_LARGE_ALLOCATIONS="${GPU_ENABLE_LARGE_ALLOCATIONS:-NO}"
 
-echo "[1/3] Checking model cache..."
+echo "[1/4] Checking model cache..."
 echo "  Cache directory: ${CACHE_DIR}"
 echo "  Model path:      ${MODEL_PATH}"
 echo ""
@@ -25,7 +28,7 @@ if [ -f "${MODEL_PATH}/openvino_model.xml" ]; then
 else
     echo "  [!] Model not found in cache."
     echo ""
-    echo "[2/3] Downloading and converting ${HF_MODEL_ID} to OpenVINO INT8..."
+    echo "[2/4] Downloading and converting ${HF_MODEL_ID} to OpenVINO INT8..."
     echo "  This may take 10-30 minutes depending on network speed."
     echo "  Downloading model weights (~8 GB)..."
     echo "  Converting to OpenVINO IR with INT8 quantization..."
@@ -50,7 +53,7 @@ else
 fi
 
 echo ""
-echo "[3/3] Starting Aimighty Embedder Server..."
+echo "[3/4] Starting Aimighty Embedder Server..."
 echo "  Model:  ${MODEL_PATH}"
 echo "  Port:   ${PORT:-9997}"
 echo "  Device: ${OV_DEVICE}"
