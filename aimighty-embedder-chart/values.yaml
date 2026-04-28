@@ -28,7 +28,7 @@ resources:
     gpu.intel.com/i915: "1"
   requests:
     cpu: "2"
-    memory: "16Gi"
+    memory: "24Gi"
     gpu.intel.com/i915: "1"
 
 env:
