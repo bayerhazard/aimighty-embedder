@@ -15,29 +15,45 @@ sleep 15
 MAX_RETRIES=90
 retry=0
 while [ $retry -lt $MAX_RETRIES ]; do
-    # Check if ConfigMap exists
-    if kubectl get configmap "$CONFIGMAP" -n "$NAMESPACE" &>/dev/null; then
-        echo "[INIT] ConfigMap found, patching timeouts..."
-        
-        # Patch all timeout: 15s to timeout: 120s in envoy.yaml
-        kubectl get configmap "$CONFIGMAP" -n "$NAMESPACE" -o json | python3 -c '
-import json, sys
-cm = json.load(sys.stdin)
-if "envoy.yaml" in cm["data"]:
-    original = cm["data"]["envoy.yaml"]
-    patched = original.replace("timeout: 15s", "timeout: 120s")
-    if patched != original:
-        cm["data"]["envoy.yaml"] = patched
-        # Remove managed fields that cause conflicts
-        for k in ["resourceVersion", "uid", "creationTimestamp", "generation", "managedFields"]:
-            cm["metadata"].pop(k, None)
-        cm["metadata"].pop("annotations", None)
-        print(json.dumps(cm))
+    if python3 -c "
+import json, urllib.request, os
+
+token = open('/var/run/secrets/kubernetes.io/serviceaccount/token').read().strip()
+ca = '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'
+ns = '${NAMESPACE}'
+cm = '${CONFIGMAP}'
+url = f'https://kubernetes.default.svc/api/v1/namespaces/{ns}/configmaps/{cm}'
+
+req = urllib.request.Request(url)
+req.add_header('Authorization', f'Bearer {token}')
+import ssl
+ctx = ssl.create_default_context(cafile=ca)
+try:
+    resp = urllib.request.urlopen(req, context=ctx, timeout=5)
+    data = json.loads(resp.read())
+    envoy = data['data'].get('envoy.yaml', '')
+    patched = envoy.replace('timeout: 15s', 'timeout: 120s')
+    if patched != envoy:
+        data['data']['envoy.yaml'] = patched
+        for k in ['resourceVersion', 'uid', 'creationTimestamp', 'generation', 'managedFields']:
+            data['metadata'].pop(k, None)
+        data['metadata'].pop('annotations', None)
+        body = json.dumps(data).encode()
+        req2 = urllib.request.Request(url, data=body, method='PUT')
+        req2.add_header('Authorization', f'Bearer {token}')
+        req2.add_header('Content-Type', 'application/json')
+        urllib.request.urlopen(req2, context=ctx, timeout=10)
+        print('PATCHED')
     else:
-        print("NO_CHANGE")
-        sys.exit(0)
-' | kubectl replace -f - &>/dev/null && echo "[INIT] ✓ Patched timeout 15s → 120s" || echo "[INIT] Patch failed, retrying..."
-        
+        print('NO_CHANGE')
+except urllib.error.HTTPError as e:
+    print(f'ERROR:{e.code}')
+    exit(1)
+except Exception as e:
+    print(f'ERROR:{e}')
+    exit(1)
+" 2>/dev/null | grep -q "PATCHED"; then
+        echo "[INIT] ✓ Patched timeout 15s → 120s"
         break
     fi
     
@@ -52,5 +68,4 @@ fi
 
 echo "[INIT] Done. Passing control to main process..."
 
-# Exit successfully - let the next process continue
 exec "$@"
