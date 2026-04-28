@@ -68,7 +68,7 @@ spec:
   supportArch:
     - amd64
   requiredCpu: 2
-  requiredMemory: 8Gi
+  requiredMemory: 16Gi
   limitedCpu: 4
   limitedMemory: 24Gi
   requiredGpu: 1
