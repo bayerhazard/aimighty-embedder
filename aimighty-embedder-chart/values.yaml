@@ -3,7 +3,7 @@ image:
   tag: latest
   pullPolicy: Always
 
-replicaCount: 1
+replicaCount: 2
 revisionHistoryLimit: 1
 
 containerPort: 9997
@@ -28,7 +28,7 @@ resources:
     gpu.intel.com/i915: "1"
   requests:
     cpu: "2"
-    memory: "16Gi"
+    memory: "8Gi"
     gpu.intel.com/i915: "1"
 
 env:
