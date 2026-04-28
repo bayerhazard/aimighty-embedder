@@ -93,7 +93,7 @@ envs:
     description: "HuggingFace token (optional, for gated models)"
   - envName: OV_DEVICE
     required: false
-    default: "GPU"
+    default: "CPU"
     type: string
     editable: true
     description: "OpenVINO device (GPU or CPU)"
