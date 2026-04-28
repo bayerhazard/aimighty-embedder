@@ -3,9 +3,9 @@ olaresManifest.type: app
 metadata:
   name: aimighty-embedder
   title: Aimighty Embedder
-  description: OpenAI-compatible embedding API powered by OpenVINO on Intel Arrow Lake-S iGPU (Qwen3-Embedding-4B INT8)
-  icon: https://app.cdn.olares.com/appstore/default/defaulticon.webp
-  version: 0.1.2
+  description: OpenAI-compatible embedding API powered by OpenVINO on Intel Core Ultra 7 275HX iGPU (Qwen3-Embedding-4B INT8)
+  icon: https://github.com/bayerhazard/aimighty-embedder/raw/main/icon.png
+  version: 0.1.3
   categories:
     - AI
     - Developer Tools
@@ -28,20 +28,23 @@ provider:
     verbs:
       - "*"
 spec:
-  versionName: '0.1.2'
+  versionName: '0.1.3'
   fullDescription: |
-    Aimighty Embedder is an OpenAI-compatible embedding service optimized for Intel Arrow Lake-S iGPU.
+    Aimighty Embedder is an OpenAI-compatible embedding service powered by OpenVINO on Intel Core Ultra 7 275HX iGPU.
+    
+    Model: Qwen/Qwen3-Embedding-4B (INT8 quantized via Optimum Intel 2.1.0.dev0 + OpenVINO 2026.0.0+)
+    Transformer Version: 4.57.6
     
     Features:
     - OpenAI-compatible API (/v1/embeddings, /v1/models)
     - OpenVINO INT8 quantized Qwen3-Embedding-4B model
-    - iGPU optimization: THROUGHPUT hint, 2 streams, FP16, Large Allocations
+    - Intel iGPU optimization: THROUGHPUT hint, 2 streams, FP16, Large Allocations
     - Async endpoints with lock against race conditions
     - Automatic CPU fallback on iGPU failure
     - Automatic model download and conversion on first start
     
     Hardware Requirements:
-    - Intel GPU with OpenCL support (Arrow Lake-S, Meteor Lake, etc.)
+    - Intel Core Ultra 7 275HX (Arrow Lake-S) with OpenCL support
     - Intel GPU Device Plugin installed (gpu.intel.com/i915)
     - SR-IOV disabled on host for Level Zero compatibility
     - Minimum 16 GB RAM, 24 GB recommended
@@ -55,6 +58,7 @@ spec:
       idle_timeout (hardcoded to 10s in Olares) must be patched separately via
       the sidecar patcher script in scripts/install-sidecar-patcher.sh
   upgradeDescription: |
+    v0.1.3: Intel Core Ultra 7 275HX support, custom icon, worker node deployment.
     v0.1.2: apiTimeout=3600 to fix RAGFlow embedding timeouts on large batches.
     v0.1.1: GPU configuration with Intel Device Plugin, Arrow Lake-S support, IGC driver pinning.
     v0.1.0: Initial release of Aimighty Embedder for Olares.
