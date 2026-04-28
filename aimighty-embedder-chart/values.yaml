@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/bayerhazard/almighty-embedder
-  tag: igpu-v4
+  tag: igpu-v5
   pullPolicy: IfNotPresent
 
 imagePullSecrets:

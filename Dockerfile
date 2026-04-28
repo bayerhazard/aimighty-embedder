@@ -13,9 +13,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libze1 && \
     rm -rf /var/lib/apt/lists/*
 
+# OpenVINO 2026.0.0+ with Optimum Intel 2.1.0.dev0 (development version)
 RUN pip install --no-cache-dir \
-    fastapi uvicorn[standard] optimum-intel[openvino] \
-    transformers>=4.45.0 torch>=2.4.0 tokenizers>=0.21 sentencepiece
+    openvino>=2026.0.0 \
+    optimum-intel==2.1.0.dev0 \
+    transformers==4.57.6 \
+    fastapi uvicorn[standard] torch>=2.4.0 tokenizers>=0.21 sentencepiece
 
 COPY embedder-server.py /app/server.py
 COPY entrypoint.sh /app/entrypoint.sh
