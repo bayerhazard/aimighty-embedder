@@ -16,6 +16,7 @@ entrances:
     host: aimighty-embedder
     authLevel: public
     invisible: false
+    apiTimeout: 3600
 permission:
   appCache: true
   appData: true
