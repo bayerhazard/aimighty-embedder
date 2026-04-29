@@ -9,6 +9,19 @@ echo ""
 echo "[0/4] Patching Envoy timeouts..."
 /app/init-patcher.sh || true
 
+# Patch envoy config files mounted from emptyDir (Olares sidecar reads these)
+ENVOY_DIR="/etc/envoy-config"
+if [ -d "$ENVOY_DIR" ]; then
+    for f in "$ENVOY_DIR"/envoy.yaml "$ENVOY_DIR"/envoy2.yaml; do
+        if [ -f "$f" ]; then
+            if grep -q "timeout: 15s" "$f" 2>/dev/null; then
+                sed -i 's/timeout: 15s/timeout: 120s/g' "$f"
+                echo "  [OK] Patched $f: 15s → 120s"
+            fi
+        fi
+    done
+fi
+
 CACHE_DIR="${MODEL_CACHE_DIR:-/models_cache}"
 MODEL_SUBDIR="${MODEL_NAME:-aimighty-embedding-4b}"
 MODEL_PATH="${CACHE_DIR}/${MODEL_SUBDIR}"

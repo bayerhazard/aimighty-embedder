@@ -63,6 +63,9 @@ spec:
               mountPath: {{ .Values.volumes.modelCache.mountPath }}
             - name: dri-devices
               mountPath: /dev/dri
+            - name: envoy-config
+              mountPath: /etc/envoy-config
+              readOnly: true
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
@@ -76,3 +79,5 @@ spec:
           hostPath:
             path: /dev/dri
             type: Directory
+        - name: envoy-config
+          emptyDir: {}
