@@ -44,6 +44,32 @@ spec:
       securityContext:
         supplementalGroups:
           {{- toYaml .Values.supplementalGroups | nindent 10 }}
+      initContainers:
+        - name: patch-envoy-timeout
+          image: beclab/busybox:1.28
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              echo "[PATCH] Waiting for envoy config files..."
+              for i in $(seq 1 30); do
+                if [ -f /config/envoy.yaml ] && [ -f /config/envoy2.yaml ]; then
+                  echo "[PATCH] Found config files, patching timeouts..."
+                  sed -i 's/timeout: 15s/timeout: 120s/g' /config/envoy.yaml /config/envoy2.yaml
+                  sed -i 's/timeout: 2s/timeout: 120s/g' /config/envoy.yaml /config/envoy2.yaml
+                  echo "[PATCH] Done. Verifying..."
+                  grep 'timeout:' /config/envoy.yaml /config/envoy2.yaml || true
+                  exit 0
+                fi
+                echo "[PATCH] Waiting for config files... ($i/30)"
+                sleep 1
+              done
+              echo "[PATCH] WARNING: Config files not found, continuing anyway..."
+          volumeMounts:
+            - name: envoy-config
+              mountPath: /config
+          resources: {}
       containers:
         - name: embedder
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
