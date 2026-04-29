@@ -16,7 +16,6 @@ entrances:
     host: aimighty-embedder
     authLevel: public
     invisible: false
-    apiTimeout: 3600
 permission:
   appCache: true
   appData: true
@@ -73,8 +72,8 @@ spec:
   limitedCpu: 4
   limitedMemory: 24Gi
   requiredGpu: 1
-  apiTimeout: 3600
 options:
+  apiTimeout: 3600
   dependencies:
     - name: olares
       type: system
