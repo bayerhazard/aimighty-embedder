@@ -1,27 +1,28 @@
 olaresManifest.version: '0.10.0'
 olaresManifest.type: app
 metadata:
-  name: aimighty-embedder
+  name: embedding
+  appid: embedding
   title: Aimighty Embedder
   description: OpenAI-compatible embedding API powered by OpenVINO on Intel Core Ultra 7 275HX iGPU (Qwen3-Embedding-4B INT8)
-  icon: https://github.com/bayerhazard/aimighty-embedder/raw/main/icon.png
+  icon: https://github.com/bayerhazard/embedding/raw/main/icon.png
   version: 0.1.3
   categories:
     - AI
     - Developer Tools
 entrances:
-  - name: aimighty-embedder
+  - name: embedding
     port: 9997
-    title: Aimighty Embedder
-    host: aimighty-embedder
+    title: Embedding
+    host: embedding
     authLevel: public
     invisible: false
 permission:
   appCache: true
   appData: true
 provider:
-  - name: aimighty-embedder-api
-    entrance: aimighty-embedder
+  - name: embedding-api
+    entrance: embedding
     paths:
       - "/v1/*"
       - "/health"
@@ -69,6 +70,7 @@ spec:
     - amd64
   requiredCpu: 2
   requiredMemory: 24Gi
+  requiredDisk: 50Gi
   limitedCpu: 4
   limitedMemory: 24Gi
   requiredGpu: 1
@@ -121,3 +123,9 @@ envs:
     type: string
     editable: true
     description: "Inference precision hint (f16, f32, bf16)"
+  - envName: GHCR_TOKEN
+    required: false
+    editable: true
+    valueFrom:
+      envName: OLARES_USER_GITHUB_TOKEN
+    description: "GitHub Container Registry token (für private Images)"

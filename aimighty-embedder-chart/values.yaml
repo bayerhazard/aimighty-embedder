@@ -1,5 +1,5 @@
 image:
-  repository: ghcr.io/bayerhazard/aimighty-embedder
+  repository: ghcr.io/bayerhazard/embedding
   tag: latest
   pullPolicy: Always
 
@@ -51,7 +51,7 @@ securityContext: {}
 
 volumes:
   modelCache:
-    hostPath: /app/cache/aimighty-embedder-models
+    hostPath: /app/cache/embedding-models
     mountPath: /models_cache
 
 livenessProbe:
