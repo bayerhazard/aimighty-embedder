@@ -1,12 +1,13 @@
-olaresManifest.version: '0.11.0'
-olaresManifest.type: app
+olaresManifest:
+  version: '0.11.0'
+  type: app
 metadata:
   name: embedding
   appid: embedding
   title: Aimighty Embedder
   description: OpenAI-compatible embedding API powered by OpenVINO on Intel Core Ultra 7 275HX iGPU (Qwen3-Embedding-4B INT8)
   icon: https://github.com/bayerhazard/embedding/raw/main/icon.png
-  version: 0.1.3
+  version: "0.1.3"
   categories:
     - AI
     - Developer Tools
