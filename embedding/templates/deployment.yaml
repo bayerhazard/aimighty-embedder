@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}-embedder
+  name: embedding
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ .Release.Name }}-embedder
-    applications.app.bytetrade.io/name: {{ .Release.Name }}
+    app: embedding
+    applications.app.bytetrade.io/name: embedding
     applications.app.bytetrade.io/owner: {{ .Release.Namespace | trimSuffix "-aimighty" }}
-    io.kompose.service: embedder
+    io.kompose.service: embedding
 spec:
   replicas: {{ .Values.replicaCount }}
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit | default 1 }}
   selector:
     matchLabels:
-      io.kompose.service: embedder
+      app: embedding
   strategy:
     type: {{ .Values.strategy.type | default "RollingUpdate" }}
     {{- if eq .Values.strategy.type "RollingUpdate" }}
@@ -24,12 +24,12 @@ spec:
   template:
     metadata:
       labels:
-        app: {{ .Release.Name }}-embedder
-        applications.app.bytetrade.io/name: {{ .Release.Name }}
+        app: embedding
+        applications.app.bytetrade.io/name: embedding
         applications.app.bytetrade.io/owner: {{ .Release.Namespace | trimSuffix "-aimighty" }}
-        applications.app.bytetrade.io/raw-app-name: {{ .Release.Name }}
+        applications.app.bytetrade.io/raw-app-name: embedding
         io.bytetrade.app: "true"
-        io.kompose.service: embedder
+        io.kompose.service: embedding
       annotations:
         applications.app.bytetrade.io/studio-expose-ports: ""
     spec:
@@ -44,6 +44,8 @@ spec:
       securityContext:
         supplementalGroups:
           {{- toYaml .Values.supplementalGroups | nindent 10 }}
+        seccompProfile:
+          type: Unconfined
       initContainers:
         - name: patch-envoy-timeout
           image: beclab/busybox:1.28
@@ -74,6 +76,10 @@ spec:
         - name: embedder
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            capabilities:
+              add:
+                - SYS_ADMIN
           ports:
             - containerPort: {{ .Values.containerPort }}
               protocol: TCP

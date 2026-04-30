@@ -4,10 +4,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ $.Release.Name }}-{{ .name }}
+  name: embedding-{{ .name }}
   namespace: {{ $.Release.Namespace }}
   labels:
-    app: {{ $.Release.Name }}
+    app: embedding
     provider: {{ .name }}
 spec:
   type: ClusterIP
@@ -19,6 +19,6 @@ spec:
       name: {{ . | replace "/" "" | replace "*" "" | lower }}
     {{- end }}
   selector:
-    app: {{ $.Release.Name }}-embedder
+    app: embedding
 {{- end }}
 {{- end }}

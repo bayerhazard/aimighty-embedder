@@ -1,9 +1,9 @@
 image:
-  repository: ghcr.io/bayerhazard/embedding
-  tag: latest
+  repository: ghcr.io/bayerhazard/aimighty-embedder
+  tag: igpu-v4
   pullPolicy: Always
 
-replicaCount: 1
+replicaCount: 2
 revisionHistoryLimit: 1
 
 containerPort: 9997
@@ -40,7 +40,7 @@ env:
   PORT: "9997"
   MODEL_CACHE_DIR: "/models_cache"
   OV_CACHE_DIR: "/tmp/ov_cache"
-  OV_DEVICE: "CPU"
+  OV_DEVICE: "GPU"
   PERFORMANCE_HINT: "THROUGHPUT"
   NUM_STREAMS: "2"
   INFERENCE_PRECISION_HINT: "f16"
