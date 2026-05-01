@@ -32,6 +32,7 @@ spec:
         io.kompose.service: embedding
       annotations:
         applications.app.bytetrade.io/studio-expose-ports: ""
+        applications.app.bytetrade.io/gpu-inject: "true"
     spec:
       {{- if .Values.nodeSelector }}
       nodeSelector:
@@ -69,7 +70,7 @@ spec:
               done
               echo "[PATCH] WARNING: Config files not found, continuing anyway..."
           volumeMounts:
-            - name: envoy-config
+            - name: app-envoy-config
               mountPath: /config
           resources: {}
       containers:
@@ -95,7 +96,7 @@ spec:
               mountPath: {{ .Values.volumes.modelCache.mountPath }}
             - name: dri-devices
               mountPath: /dev/dri
-            - name: envoy-config
+            - name: app-envoy-config
               mountPath: /etc/envoy-config
               readOnly: true
           livenessProbe:
@@ -105,11 +106,11 @@ spec:
       volumes:
         - name: model-cache
           hostPath:
-            path: {{ .Values.volumes.modelCache.hostPath }}
+            path: {{ .Values.userspace.appData }}/embedding-models
             type: DirectoryOrCreate
         - name: dri-devices
           hostPath:
             path: /dev/dri
             type: Directory
-        - name: envoy-config
+        - name: app-envoy-config
           emptyDir: {}
