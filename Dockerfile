@@ -8,9 +8,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     /etc/apt/sources.list.d/intel-gpu-noble.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
+    ocl-icd-libopencl1 \
     intel-opencl-icd \
-    libze-intel-gpu1 \
-    libze1 && \
+    intel-level-zero-gpu \
+    level-zero && \
     rm -rf /var/lib/apt/lists/*
 
 # OpenVINO 2026.0.0+ with Optimum Intel 2.1.0.dev0 (installed from git main branch)
