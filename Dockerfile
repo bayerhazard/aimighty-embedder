@@ -22,8 +22,7 @@ RUN pip install --no-cache-dir \
 
 COPY embedder-server.py /app/server.py
 COPY entrypoint.sh /app/entrypoint.sh
-COPY scripts/embedder-init-patcher.sh /app/init-patcher.sh
-RUN chmod +x /app/entrypoint.sh /app/init-patcher.sh
+RUN chmod +x /app/entrypoint.sh
 RUN ln -sf /usr/local/bin/python3.11 /usr/bin/python3
 RUN mkdir -p /models_cache
 WORKDIR /app

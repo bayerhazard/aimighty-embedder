@@ -6,8 +6,6 @@ echo "  Aimighty OpenVINO Embedder"
 echo "============================================"
 echo ""
 
-echo "[0/4] Patching Envoy timeouts..."
-/app/init-patcher.sh || true
 
 # Patch envoy config files mounted from emptyDir (Olares sidecar reads these)
 ENVOY_DIR="/etc/envoy-config"
