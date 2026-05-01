@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     /etc/apt/sources.list.d/intel-gpu-noble.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-    ocl-icd-libopencl1 intel-opencl-icd && \
+    ocl-icd-libopencl1 intel-opencl-icd=24.52.32224.14-1077~24.04 && \
     ldconfig && \
     rm -rf /var/lib/apt/lists/*
 
