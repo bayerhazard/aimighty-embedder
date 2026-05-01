@@ -50,7 +50,7 @@ def get_model():
     from transformers import AutoTokenizer
 
     log.info("Loading tokenizer...")
-    _tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR)
+    _tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR, padding_side="left")
     log.info("Tokenizer loaded successfully.")
 
     log.info("Loading OpenVINO model on %s...", OV_DEVICE)
@@ -118,16 +118,26 @@ def _run_inference(texts):
         model, tok = get_model()
         log.info("Embedding %d text(s)", len(texts))
 
-        enc = tok(texts, padding=True, truncation=True, max_length=512, return_tensors="pt")
+        enc = tok(texts, padding=True, truncation=True, max_length=8192, return_tensors="pt")
 
         with torch.no_grad():
             out = model(**enc)
 
-        emb = out[0]
-        mask = enc["attention_mask"].unsqueeze(-1).expand(emb.size()).float()
-        pooled = (emb * mask).sum(1) / mask.sum(1).clamp(min=1e-9)
-        norms = pooled.norm(dim=1, keepdim=True).clamp(min=1e-9)
-        vecs = (pooled / norms).tolist()
+        # Qwen3-Embedding requires LAST TOKEN pooling (not mean pooling)
+        # Reference: https://huggingface.co/Qwen/Qwen3-Embedding-4B
+        last_hidden = out[0]
+        attention_mask = enc["attention_mask"]
+        # With padding_side="left", last token is always at position -1
+        left_padding = (attention_mask[:, -1].sum() == attention_mask.shape[0])
+        if left_padding:
+            pooled = last_hidden[:, -1]
+        else:
+            sequence_lengths = attention_mask.sum(dim=1) - 1
+            batch_size = last_hidden.shape[0]
+            pooled = last_hidden[torch.arange(batch_size), sequence_lengths]
+        # L2 normalize (per HF model card)
+        pooled = torch.nn.functional.normalize(pooled, p=2, dim=1)
+        vecs = pooled.tolist()
         total = int(enc["input_ids"].numel())
 
     try:

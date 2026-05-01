@@ -48,6 +48,7 @@ else
     mkdir -p "${MODEL_PATH}"
 
     optimum-cli export openvino \
+        --library transformers \
         --model "${HF_MODEL_ID}" \
         --task feature-extraction \
         --weight-format int8 \

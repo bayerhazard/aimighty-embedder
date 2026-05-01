@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN pip install --no-cache-dir \
     openvino>=2026.0.0 \
     "optimum-intel[openvino] @ git+https://github.com/huggingface/optimum-intel.git@main" \
-    transformers==4.57.6 \
+    transformers==4.55.4 \
     fastapi uvicorn[standard] torch>=2.4.0 tokenizers>=0.21 sentencepiece
 
 COPY embedder-server.py /app/server.py
