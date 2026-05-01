@@ -23,7 +23,9 @@ COPY embedder-server.py /app/server.py
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 RUN ln -sf /usr/local/bin/python3.11 /usr/bin/python3
-RUN mkdir -p /models_cache
+RUN mkdir -p /models_cache && chmod 777 /models_cache
+RUN useradd -u 1000 -m -s /bin/bash embedder
+RUN chown -R embedder:embedder /app
 WORKDIR /app
 
 ENV MALLOC_ARENA_MAX=1
@@ -31,5 +33,7 @@ ENV OV_CACHE_DIR=/tmp/ov_cache
 ENV MODEL_CACHE_DIR=/models_cache
 
 EXPOSE 9997
+
+USER embedder
 
 ENTRYPOINT ["/app/entrypoint.sh"]
