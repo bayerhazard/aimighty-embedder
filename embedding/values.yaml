@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/bayerhazard/aimighty-embedder
-  tag: igpu-v11
+  tag: igpu-v12
   pullPolicy: Always
 
 replicaCount: 1

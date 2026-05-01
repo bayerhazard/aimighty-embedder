@@ -23,31 +23,9 @@ if [ -f "${MODEL_PATH}/openvino_model.xml" ]; then
     echo "  [OK] OpenVINO model found in cache."
     echo "  Skipping download and conversion."
 else
-    echo "  [!] Model not found in cache."
-    echo ""
-    echo "[2/4] Downloading and converting ${HF_MODEL_ID} to OpenVINO INT8..."
-    echo "  This may take 10-30 minutes depending on network speed."
-    echo "  Downloading model weights (~8 GB)..."
-    echo "  Converting to OpenVINO IR with INT8 quantization..."
-    echo ""
-
-    mkdir -p "${MODEL_PATH}"
-
-    optimum-cli export openvino \
-        --library transformers \
-        --model "${HF_MODEL_ID}" \
-        --task feature-extraction \
-        --weight-format int8 \
-        "${MODEL_PATH}"
-
-    echo ""
-    if [ -f "${MODEL_PATH}/openvino_model.xml" ]; then
-        echo "  [OK] Model conversion successful."
-        echo "  Converted model saved to: ${MODEL_PATH}"
-    else
-        echo "  [ERROR] Model conversion failed. openvino_model.xml not found."
-        exit 1
-    fi
+    echo "  [ERROR] Model not found in cache and not pre-converted in image."
+    echo "  Please rebuild the Docker image with the model included."
+    exit 1
 fi
 
 echo ""

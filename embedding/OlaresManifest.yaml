@@ -7,7 +7,7 @@ metadata:
   description: OpenAI-compatible embedding API powered by OpenVINO on Intel Core Ultra
     7 275HX iGPU (Qwen3-Embedding-4B INT8)
   icon: https://github.com/bayerhazard/aimighty-embedder/raw/main/icon.png
-  version: 0.1.8
+  version: 0.1.9
   categories:
   - AI
   - Developer Tools
@@ -30,7 +30,7 @@ provider:
   verbs:
   - '*'
 spec:
-  versionName: 0.1.8
+  versionName: 0.1.9
   fullDescription: 'Aimighty Embedder is an OpenAI-compatible embedding service powered
     by OpenVINO on Intel Core Ultra 7 275HX iGPU.
 

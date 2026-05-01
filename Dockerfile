@@ -19,6 +19,16 @@ RUN pip install --no-cache-dir \
     transformers==4.55.4 \
     fastapi uvicorn[standard] torch>=2.4.0 tokenizers>=0.21 sentencepiece
 
+
+# Pre-convert Qwen3-Embedding-4B to OpenVINO INT8 during build
+# This avoids ~14GB runtime memory spike from on-demand conversion
+RUN optimum-cli export openvino \
+    --model Qwen/Qwen3-Embedding-4B \
+    --task feature-extraction \
+    --weight-format int8 \
+    /models_cache/aimighty-embedding-4b && \
+    rm -rf /root/.cache/huggingface
+
 COPY embedder-server.py /app/server.py
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
