@@ -97,6 +97,8 @@ def root():
     status_color = "#10b981" if _model_ready else "#f59e0b"
     status_text = "Ready" if _model_ready else "Loading model..."
     device = OV_DEVICE.upper()
+    mode = os.getenv("EMBEDDER_MODE", "single")
+    mode_label = "Cluster (2 iGPUs)" if mode == "cluster" else "Single (1 iGPU)"
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -147,7 +149,7 @@ def root():
   <div class="meta">
     <div class="meta-item"><div class="meta-label">Model</div><div class="meta-value">{MODEL_NAME}</div></div>
     <div class="meta-item"><div class="meta-label">Device</div><div class="meta-value">{device}</div></div>
-    <div class="meta-item"><div class="meta-label">Dim</div><div class="meta-value">2560</div></div>
+    <div class="meta-item"><div class="meta-label">Mode</div><div class="meta-value">{mode_label}</div></div>
     <div class="meta-item"><div class="meta-label">Max tokens</div><div class="meta-value">8192</div></div>
   </div>
   <h2>API Endpoints</h2>

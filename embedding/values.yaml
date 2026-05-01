@@ -1,9 +1,9 @@
 image:
   repository: ghcr.io/bayerhazard/aimighty-embedder
-  tag: igpu-v4
+  tag: igpu-v8
   pullPolicy: Always
 
-replicaCount: 2
+replicaCount: 1
 revisionHistoryLimit: 1
 
 containerPort: 9997
@@ -15,7 +15,7 @@ strategy:
     maxUnavailable: "25%"
 
 nodeSelector:
-  kubernetes.io/hostname: worker
+  kubernetes.io/hostname: olares-worker
 
 supplementalGroups:
   - 44    # video group (card devices)
@@ -25,11 +25,9 @@ resources:
   limits:
     cpu: "4"
     memory: "24Gi"
-    gpu.intel.com/i915: "1"
   requests:
     cpu: "2"
     memory: "24Gi"
-    gpu.intel.com/i915: "1"
 
 env:
   PUID: "1000"
@@ -51,7 +49,6 @@ securityContext: {}
 
 volumes:
   modelCache:
-    hostPath: /app/cache/embedding-models
     mountPath: /models_cache
 
 livenessProbe:
@@ -59,9 +56,9 @@ livenessProbe:
     path: /health
     port: 9997
     scheme: HTTP
-  initialDelaySeconds: 180
+  initialDelaySeconds: 1800
   periodSeconds: 30
-  failureThreshold: 5
+  failureThreshold: 10
   timeoutSeconds: 5
 
 readinessProbe:

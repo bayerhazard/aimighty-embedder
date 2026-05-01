@@ -1,13 +1,12 @@
-olaresManifest:
-  version: '0.11.0'
-  type: app
+olaresManifest.version: '0.11.0'
+olaresManifest.type: app
 metadata:
   name: embedding
   appid: embedding
   title: Aimighty Embedder
   description: OpenAI-compatible embedding API powered by OpenVINO on Intel Core Ultra 7 275HX iGPU (Qwen3-Embedding-4B INT8)
-  icon: https://github.com/bayerhazard/embedding/raw/main/icon.png
-  version: "0.1.3"
+  icon: https://github.com/bayerhazard/aimighty-embedder/raw/main/icon.png
+  version: 0.1.3
   categories:
     - AI
     - Developer Tools
@@ -47,7 +46,7 @@ spec:
     
     Hardware Requirements:
     - Intel Core Ultra 7 275HX (Arrow Lake-S) with OpenCL support
-    - Intel GPU Device Plugin installed (gpu.intel.com/i915)
+    - hostPath /dev/dri for direct iGPU access (Olares has no Intel Device Plugin)
     - SR-IOV disabled on host for Level Zero compatibility
     - Minimum 16 GB RAM, 24 GB recommended
     
@@ -55,12 +54,9 @@ spec:
     - Intel GPU drivers pinned to OpenCL 24.39.x (avoids IGC 25.18.x crash on Arrow Lake)
     
     Olares Sidecar Note:
-    - apiTimeout: 3600 sets per-route HTTP timeout (override for default 15s)
-    - For long batch embeddings (e.g. RAGFlow with 100+ chunks), the cluster
-      idle_timeout (hardcoded to 10s in Olares) must be patched separately via
-      the sidecar patcher script in scripts/install-sidecar-patcher.sh
+    - Envoy timeout patched via initContainer (15s -> 120s) for large embedding batches
   upgradeDescription: |
-    v0.1.3: Intel Core Ultra 7 275HX support, custom icon, worker node deployment.
+    v0.1.3: Removed init-patcher relict, hostPath /dev/dri instead of GPU device plugin.
     v0.1.2: apiTimeout=3600 to fix RAGFlow embedding timeouts on large batches.
     v0.1.1: GPU configuration with Intel Device Plugin, Arrow Lake-S support, IGC driver pinning.
     v0.1.0: Initial release of Aimighty Embedder for Olares.
@@ -74,8 +70,7 @@ spec:
   requiredDisk: 50Gi
   limitedCpu: 4
   limitedMemory: 24Gi
-  limitedDisk: 50Gi
-  requiredGpu: 1
+  requiredGpu: 0
 options:
   apiTimeout: 3600
   dependencies:
@@ -84,6 +79,18 @@ options:
       version: '>=1.12.2-0'
   allowMultipleInstall: false
 envs:
+  - envName: EMBEDDER_MODE
+    required: false
+    default: "single"
+    type: string
+    editable: true
+    applyOnChange: true
+    description: "Deployment topology. 'single' = 1 pod on olares-worker (low memory). 'cluster' = 2 pods on both nodes via podAntiAffinity (uses both iGPUs, doubles RAM)."
+    options:
+      - title: "Single node (1 pod, ~8GB RAM, 1 iGPU)"
+        value: "single"
+      - title: "Cluster mode (2 pods, ~16GB RAM, 2 iGPUs)"
+        value: "cluster"
   - envName: HF_MODEL_ID
     required: false
     default: "Qwen/Qwen3-Embedding-4B"
@@ -97,7 +104,7 @@ envs:
     description: "HuggingFace token (optional, for gated models)"
   - envName: OV_DEVICE
     required: false
-    default: "CPU"
+    default: "GPU"
     type: string
     editable: true
     description: "OpenVINO device (GPU or CPU)"
@@ -125,9 +132,3 @@ envs:
     type: string
     editable: true
     description: "Inference precision hint (f16, f32, bf16)"
-  - envName: GHCR_TOKEN
-    required: false
-    editable: true
-    valueFrom:
-      envName: OLARES_USER_GITHUB_TOKEN
-    description: "GitHub Container Registry token (für private Images)"
