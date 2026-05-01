@@ -38,7 +38,7 @@ spec:
     Model: Qwen/Qwen3-Embedding-4B (INT8 quantized via Optimum Intel 2.1.0.dev0 +
     OpenVINO 2026.0.0+)
 
-    Transformer Version: 4.57.6
+    Transformer Version: 4.55.4
 
 
     Features:
@@ -99,7 +99,7 @@ spec:
   requiredDisk: 50Gi
   limitedCpu: 4
   limitedMemory: 24Gi
-  requiredGpu: 0
+  requiredGpu: 0  # Intentional: uses hostPath /dev/dri (Intel iGPU still required)
 options:
   apiTimeout: 3600
   dependencies:

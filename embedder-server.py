@@ -35,6 +35,10 @@ _model = None
 _tokenizer = None
 _infer_lock = threading.Lock()
 _model_ready = False
+try:
+    _libc = ctypes.CDLL("libc.so.6", mode=ctypes.RTLD_GLOBAL)
+except (AttributeError, OSError):
+    _libc = None
 # Semaphore removed - threading.Lock already serializes inference
 
 def get_model():
@@ -210,20 +214,15 @@ def _run_inference(texts):
         last_hidden = out[0]
         attention_mask = enc["attention_mask"]
         # With padding_side="left", last token is always at position -1
-        left_padding = (attention_mask[:, -1].sum() == attention_mask.shape[0])
-        if left_padding:
-            pooled = last_hidden[:, -1]
-        else:
-            sequence_lengths = attention_mask.sum(dim=1) - 1
-            batch_size = last_hidden.shape[0]
-            pooled = last_hidden[torch.arange(batch_size), sequence_lengths]
+        # tokenizer uses padding_side="left", so last token is always at position -1
+        pooled = last_hidden[:, -1]
         # L2 normalize (per HF model card)
         pooled = torch.nn.functional.normalize(pooled, p=2, dim=1)
         vecs = pooled.tolist()
         total = int(enc["input_ids"].numel())
 
     try:
-        ctypes.CDLL("libc.so.6", mode=ctypes.RTLD_GLOBAL).malloc_trim(0)
+        _libc.malloc_trim(0)
     except (AttributeError, OSError):
         pass
     return vecs, total

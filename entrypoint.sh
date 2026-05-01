@@ -7,26 +7,12 @@ echo "============================================"
 echo ""
 
 
-# Patch envoy config files mounted from emptyDir (Olares sidecar reads these)
-ENVOY_DIR="/etc/envoy-config"
-if [ -d "$ENVOY_DIR" ]; then
-    for f in "$ENVOY_DIR"/envoy.yaml "$ENVOY_DIR"/envoy2.yaml; do
-        if [ -f "$f" ]; then
-            if grep -q "timeout: 15s" "$f" 2>/dev/null; then
-                sed -i 's/timeout: 15s/timeout: 120s/g' "$f"
-                echo "  [OK] Patched $f: 15s → 120s"
-            fi
-        fi
-    done
-fi
-
 CACHE_DIR="${MODEL_CACHE_DIR:-/models_cache}"
 MODEL_SUBDIR="${MODEL_NAME:-aimighty-embedding-4b}"
 MODEL_PATH="${CACHE_DIR}/${MODEL_SUBDIR}"
 HF_MODEL_ID="${HF_MODEL_ID:-Qwen/Qwen3-Embedding-4B}"
-OV_DEVICE="${OV_DEVICE:-CPU}"
-export OV_DEVICE
-export GPU_ENABLE_LARGE_ALLOCATIONS="${GPU_ENABLE_LARGE_ALLOCATIONS:-NO}"
+export OV_DEVICE="${OV_DEVICE:-CPU}"
+export GPU_ENABLE_LARGE_ALLOCATIONS="${GPU_ENABLE_LARGE_ALLOCATIONS:-YES}"
 
 echo "[1/4] Checking model cache..."
 echo "  Cache directory: ${CACHE_DIR}"

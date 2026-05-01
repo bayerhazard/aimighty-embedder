@@ -9,7 +9,7 @@ metadata:
     applications.app.bytetrade.io/owner: {{ .Release.Namespace | trimSuffix "-aimighty" }}
     io.kompose.service: embedding
 spec:
-  replicas: {{ if eq (.Values.olaresEnv.EMBEDDER_MODE | default "single") "cluster" }}2{{ else }}1{{ end }}
+  replicas: {{ if eq (.Values.olaresEnv.EMBEDDER_MODE | default "cluster") "cluster" }}2{{ else }}1{{ end }}
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit | default 1 }}
   selector:
     matchLabels:
@@ -34,7 +34,7 @@ spec:
         applications.app.bytetrade.io/studio-expose-ports: ""
         applications.app.bytetrade.io/gpu-inject: "true"
     spec:
-      {{- if eq (.Values.olaresEnv.EMBEDDER_MODE | default "single") "cluster" }}
+      {{- if eq (.Values.olaresEnv.EMBEDDER_MODE | default "cluster") "cluster" }}
       # cluster mode: spread pods across both nodes
       affinity:
         podAntiAffinity:
@@ -102,8 +102,10 @@ spec:
             - name: EMBEDDER_MODE
               value: {{ .Values.olaresEnv.EMBEDDER_MODE | default "single" | quote }}
             {{- range $key, $value := .Values.env }}
+            {{- if ne $value "" }}
             - name: {{ $key }}
               value: {{ $value | quote }}
+            {{- end }}
             {{- end }}
             {{- range $key, $value := .Values.olaresEnv }}
             {{- if ne $key "EMBEDDER_MODE" }}
