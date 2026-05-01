@@ -8,8 +8,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     /etc/apt/sources.list.d/intel-gpu-noble.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-    ocl-icd-libopencl1 \
-    intel-opencl-icd \
     intel-level-zero-gpu \
     level-zero && \
     rm -rf /var/lib/apt/lists/*
