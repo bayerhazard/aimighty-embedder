@@ -15,7 +15,7 @@ entrances:
     port: 9997
     title: Embedding
     host: embedding
-    authLevel: public
+    authLevel: internal
     invisible: false
 permission:
   appCache: true
