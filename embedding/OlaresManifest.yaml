@@ -6,7 +6,7 @@ metadata:
   title: Aimighty Embedder
   description: OpenAI-compatible embedding API powered by OpenVINO on Intel Core Ultra 7 275HX iGPU (Qwen3-Embedding-4B INT8)
   icon: https://github.com/bayerhazard/aimighty-embedder/raw/main/icon.png
-  version: 0.1.3
+  version: 0.1.5
   categories:
     - AI
     - Developer Tools
@@ -15,7 +15,7 @@ entrances:
     port: 9997
     title: Embedding
     host: embedding
-    authLevel: internal
+    authLevel: public
     invisible: false
 permission:
   appCache: true
