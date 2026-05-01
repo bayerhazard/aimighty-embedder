@@ -90,11 +90,8 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           securityContext:
-            runAsUser: 1000
-            runAsGroup: 44
-            supplementalGroups:
-              - 44
-              - 994
+            privileged: true
+            allowPrivilegeEscalation: true
             capabilities:
               add:
                 - SYS_ADMIN
