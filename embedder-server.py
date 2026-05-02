@@ -21,10 +21,14 @@ OV_NUM_STREAMS = os.getenv("NUM_STREAMS", "1")
 
 
 def _build_ov_config():
-    return {
+    cfg = {
         "PERFORMANCE_HINT": OV_PERFORMANCE_HINT,
         "NUM_STREAMS": OV_NUM_STREAMS,
     }
+    if OV_DEVICE.upper() == "CPU":
+        cfg["SCHEDULING_CORE_TYPE"] = "PCORE_ONLY"
+        cfg["ENABLE_CPU_PINNING"] = "NO"
+    return cfg
 
 app = FastAPI()
 _model = None
@@ -250,4 +254,13 @@ async def embed(req: EmbReq):
     }
 
 if __name__ == "__main__":
+    import threading
+    def warmup():
+        import time
+        time.sleep(2)
+        try:
+            get_model()
+        except Exception:
+            pass
+    threading.Thread(target=warmup, daemon=True).start()
     uvicorn.run(app, host="0.0.0.0", port=PORT)
