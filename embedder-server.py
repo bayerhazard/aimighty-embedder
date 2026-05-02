@@ -17,18 +17,14 @@ PORT       = int(os.getenv("PORT", "9997"))
 OV_DEVICE = os.getenv("OV_DEVICE", "CPU")
 OV_PERFORMANCE_HINT = os.getenv("PERFORMANCE_HINT", "LATENCY")
 OV_NUM_STREAMS = os.getenv("NUM_STREAMS", "1")
-OV_INFERENCE_PRECISION = os.getenv("INFERENCE_PRECISION_HINT", "f16")
-OV_GPU_LARGE_ALLOC = os.getenv("GPU_ENABLE_LARGE_ALLOCATIONS", "NO")
+
+
 
 def _build_ov_config():
-    cfg = {
+    return {
         "PERFORMANCE_HINT": OV_PERFORMANCE_HINT,
         "NUM_STREAMS": OV_NUM_STREAMS,
     }
-    if OV_DEVICE.upper() == "GPU":
-        cfg["INFERENCE_PRECISION_HINT"] = OV_INFERENCE_PRECISION
-        cfg["GPU_ENABLE_LARGE_ALLOCATIONS"] = OV_GPU_LARGE_ALLOC
-    return cfg
 
 app = FastAPI()
 _model = None

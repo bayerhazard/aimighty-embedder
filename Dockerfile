@@ -1,15 +1,7 @@
 FROM python:3.11-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget gnupg2 ca-certificates git && \
-    wget -qO - https://repositories.intel.com/gpu/intel-graphics.key | \
-    gpg --dearmor --output /usr/share/keyrings/intel-graphics-archive-keyring.gpg && \
-    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/intel-graphics-archive-keyring.gpg] https://repositories.intel.com/gpu/ubuntu noble unified" > \
-    /etc/apt/sources.list.d/intel-gpu-noble.list && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-    ocl-icd-libopencl1 intel-opencl-icd=24.52.32224.14-1077~24.04 && \
-    ldconfig && \
+    git && \
     rm -rf /var/lib/apt/lists/*
 
 # OpenVINO 2026.0.0+ with Optimum Intel 2.1.0.dev0 (installed from git main branch)
@@ -32,7 +24,6 @@ RUN optimum-cli export openvino \
 COPY embedder-server.py /app/server.py
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
-RUN ln -sf /usr/local/bin/python3.11 /usr/bin/python3
 RUN mkdir -p /models_cache
 WORKDIR /app
 

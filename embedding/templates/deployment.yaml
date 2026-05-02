@@ -32,7 +32,6 @@ spec:
         io.kompose.service: embedding
       annotations:
         applications.app.bytetrade.io/studio-expose-ports: ""
-        applications.app.bytetrade.io/gpu-inject: "true"
     spec:
       {{- if eq (.Values.olaresEnv.EMBEDDER_MODE | default "cluster") "cluster" }}
       # cluster mode: spread pods across both nodes
@@ -44,19 +43,13 @@ spec:
                   app: embedding
               topologyKey: kubernetes.io/hostname
       {{- else }}
-      # single mode: pin to worker
-      {{- if .Values.nodeSelector }}
-      nodeSelector:
-        {{- toYaml .Values.nodeSelector | nindent 8 }}
-      {{- end }}
+      # single mode: run on any node
       {{- end }}
       {{- if .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml .Values.imagePullSecrets | nindent 8 }}
       {{- end }}
       securityContext:
-        supplementalGroups:
-          {{- toYaml .Values.supplementalGroups | nindent 10 }}
         seccompProfile:
           type: Unconfined
       initContainers:
@@ -89,12 +82,7 @@ spec:
         - name: embedder
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          securityContext:
-            privileged: true
-            allowPrivilegeEscalation: true
-            capabilities:
-              add:
-                - SYS_ADMIN
+          securityContext: {}
           ports:
             - containerPort: {{ .Values.containerPort }}
               protocol: TCP
@@ -117,10 +105,7 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
             - name: model-cache
-              mountPath: {{ .Values.volumes.modelCache.mountPath }}
-            - name: dri-devices
-              mountPath: /dev/dri
-            - name: app-envoy-config
+              mountPath: {{ .Values.volumes.modelCache.mountPath }}            - name: app-envoy-config
               mountPath: /etc/envoy-config
               readOnly: true
           livenessProbe:
@@ -131,10 +116,5 @@ spec:
         - name: model-cache
           hostPath:
             path: {{ .Values.userspace.appData }}/embedding-models
-            type: DirectoryOrCreate
-        - name: dri-devices
-          hostPath:
-            path: /dev/dri
-            type: Directory
-        - name: app-envoy-config
+            type: DirectoryOrCreate        - name: app-envoy-config
           emptyDir: {}
