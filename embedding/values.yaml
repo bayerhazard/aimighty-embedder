@@ -38,8 +38,8 @@ livenessProbe:
     port: 9997
     scheme: HTTP
   initialDelaySeconds: 1800
-  periodSeconds: 30
-  failureThreshold: 10
+  periodSeconds: 60
+  failureThreshold: 30
   timeoutSeconds: 5
 readinessProbe:
   httpGet:
@@ -47,8 +47,17 @@ readinessProbe:
     port: 9997
     scheme: HTTP
   initialDelaySeconds: 60
-  periodSeconds: 10
-  failureThreshold: 12
+  periodSeconds: 30
+  failureThreshold: 30
+  timeoutSeconds: 5
+startupProbe:
+  httpGet:
+    path: /health
+    port: 9997
+    scheme: HTTP
+  initialDelaySeconds: 30
+  periodSeconds: 15
+  failureThreshold: 30
   timeoutSeconds: 5
 service:
   type: ClusterIP

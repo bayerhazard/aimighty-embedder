@@ -104,8 +104,6 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
-            - name: model-cache
-              mountPath: {{ .Values.volumes.modelCache.mountPath }}
             - name: app-envoy-config
               mountPath: /etc/envoy-config
               readOnly: true
@@ -113,10 +111,8 @@ spec:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
+          startupProbe:
+            {{- toYaml .Values.startupProbe | nindent 12 }}
       volumes:
-        - name: model-cache
-          hostPath:
-            path: {{ .Values.userspace.appData }}/embedding-models
-            type: DirectoryOrCreate
         - name: app-envoy-config
           emptyDir: {}
