@@ -105,7 +105,8 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
             - name: model-cache
-              mountPath: {{ .Values.volumes.modelCache.mountPath }}            - name: app-envoy-config
+              mountPath: {{ .Values.volumes.modelCache.mountPath }}
+            - name: app-envoy-config
               mountPath: /etc/envoy-config
               readOnly: true
           livenessProbe:
@@ -116,5 +117,6 @@ spec:
         - name: model-cache
           hostPath:
             path: {{ .Values.userspace.appData }}/embedding-models
-            type: DirectoryOrCreate        - name: app-envoy-config
+            type: DirectoryOrCreate
+        - name: app-envoy-config
           emptyDir: {}

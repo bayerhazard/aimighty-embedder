@@ -53,3 +53,11 @@ readinessProbe:
 service:
   type: ClusterIP
   port: 9997
+
+# Olares-specific environment variables (overridden by Olares at install time)
+olaresEnv:
+  EMBEDDER_MODE: "cluster"
+
+# Userspace paths (overridden by Olares at install time)
+userspace:
+  appData: "/data/app-data"
