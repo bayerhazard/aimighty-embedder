@@ -13,7 +13,7 @@ strategy:
 resources:
   limits:
     cpu: '8'
-    memory: 16Gi
+    memory: 24Gi
   requests:
     cpu: '2'
     memory: 8Gi
