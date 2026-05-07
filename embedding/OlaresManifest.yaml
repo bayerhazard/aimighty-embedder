@@ -4,8 +4,7 @@ metadata:
   name: embedding
   appid: embedding
   title: Aimighty Embedder
-  description: OpenAI-compatible embedding API powered by OpenVINO (CPU-only) on Intel Core Ultra 7 275HX (Qwen3-Embedding-4B INT8). Cluster mode with 2 replicas.
-    7 275HX iGPU (Qwen3-Embedding-4B INT8)
+  description: OpenAI-compatible embedding API powered by OpenVINO on Intel Core Ultra 7 275HX iGPU (Qwen3-Embedding-4B INT8).
   icon: https://github.com/bayerhazard/aimighty-embedder/raw/main/icon.png
   version: 1.0.0
   categories:
@@ -21,14 +20,6 @@ entrances:
 permission:
   appCache: true
   appData: true
-provider:
-- name: embedding-api
-  entrance: embedding
-  paths:
-  - /v1/*
-  - /health
-  verbs:
-  - '*'
 spec:
   versionName: "1.0.0"
   fullDescription: 'Aimighty Embedder is an OpenAI-compatible embedding service powered
@@ -114,8 +105,7 @@ envs:
   type: string
   editable: true
   applyOnChange: true
-  description: OpenAI-compatible embedding API powered by OpenVINO (CPU-only) on Intel Core Ultra 7 275HX (Qwen3-Embedding-4B INT8). Cluster mode with 2 replicas.
-    (uses both iGPUs, doubles RAM). 'single' = 1 pod on olares-worker (low memory).
+  description: "Deployment mode: 'cluster' = 2 pods (~48GB RAM), 'single' = 1 pod (~24GB RAM)"
   options:
   - title: Cluster mode (2 pods, ~48GB RAM, 2 iGPUs)
     value: "cluster"
@@ -126,39 +116,39 @@ envs:
   default: Qwen/Qwen3-Embedding-4B
   type: string
   editable: true
-  description: OpenAI-compatible embedding API powered by OpenVINO (CPU-only) on Intel Core Ultra 7 275HX (Qwen3-Embedding-4B INT8). Cluster mode with 2 replicas.
+  description: "HuggingFace model ID for the embedding model"
 - envName: HUGGING_FACE_HUB_TOKEN
   required: false
   type: password
   editable: true
-  description: OpenAI-compatible embedding API powered by OpenVINO (CPU-only) on Intel Core Ultra 7 275HX (Qwen3-Embedding-4B INT8). Cluster mode with 2 replicas.
+  description: "HuggingFace access token for gated model downloads"
 - envName: OV_DEVICE
   required: false
   default: CPU
   type: string
   editable: true
-  description: OpenAI-compatible embedding API powered by OpenVINO (CPU-only) on Intel Core Ultra 7 275HX (Qwen3-Embedding-4B INT8). Cluster mode with 2 replicas.
+  description: "OpenVINO compute device: 'CPU' or 'GPU'"
 - envName: PERFORMANCE_HINT
   required: false
   default: THROUGHPUT
   type: string
   editable: true
-  description: OpenAI-compatible embedding API powered by OpenVINO (CPU-only) on Intel Core Ultra 7 275HX (Qwen3-Embedding-4B INT8). Cluster mode with 2 replicas.
+  description: "OpenVINO performance hint: 'THROUGHPUT' or 'LATENCY'"
 - envName: NUM_STREAMS
   required: false
   default: '2'
   type: int
   editable: true
-  description: OpenAI-compatible embedding API powered by OpenVINO (CPU-only) on Intel Core Ultra 7 275HX (Qwen3-Embedding-4B INT8). Cluster mode with 2 replicas.
+  description: "Number of parallel OpenVINO inference streams"
 - envName: GPU_ENABLE_LARGE_ALLOCATIONS
   required: false
   default: 'YES'
   type: string
   editable: true
-  description: OpenAI-compatible embedding API powered by OpenVINO (CPU-only) on Intel Core Ultra 7 275HX (Qwen3-Embedding-4B INT8). Cluster mode with 2 replicas.
+  description: "Enable large memory allocations for GPU (YES/NO)"
 - envName: INFERENCE_PRECISION_HINT
   required: false
   default: f16
   type: string
   editable: true
-  description: OpenAI-compatible embedding API powered by OpenVINO (CPU-only) on Intel Core Ultra 7 275HX (Qwen3-Embedding-4B INT8). Cluster mode with 2 replicas.
+  description: "OpenVINO inference precision: 'f16', 'f32', or 'bf16'"
