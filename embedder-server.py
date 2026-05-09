@@ -67,7 +67,7 @@ def get_model():
         _model = OVModelForFeatureExtraction.from_pretrained(
             MODEL_DIR,
             device=device_to_use,
-            compile=True,
+            compile=False,
             ov_config=ov_config,
         )
         log.info("Model loaded on %s successfully.", device_to_use)
@@ -78,7 +78,7 @@ def get_model():
             _model = OVModelForFeatureExtraction.from_pretrained(
                 MODEL_DIR,
                 device="CPU",
-                compile=True,
+                compile=False,
                 ov_config={"PERFORMANCE_HINT": "LATENCY", "NUM_STREAMS": "1"},
             )
             log.info("Model loaded on CPU (fallback) successfully.")
@@ -256,11 +256,17 @@ async def embed(req: EmbReq):
 if __name__ == "__main__":
     import threading
     def warmup():
-        import time
-        time.sleep(2)
+        import time as _time
+        _time.sleep(2)
         try:
-            get_model()
-        except Exception:
-            pass
+            model, tok = get_model()
+            import torch
+            enc = tok(["warmup"], padding=True, truncation=True, return_tensors="pt")
+            with _infer_lock:
+                with torch.no_grad():
+                    model(**enc)
+            log.info("Warmup inference complete. Model ready.")
+        except Exception as e:
+            log.exception("Model warmup failed: %s", e)
     threading.Thread(target=warmup, daemon=True).start()
     uvicorn.run(app, host="0.0.0.0", port=PORT)
