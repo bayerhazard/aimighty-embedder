@@ -57,6 +57,7 @@ spec:
   limitedCpu: 4
   limitedMemory: 24Gi
 options:
+  apiTimeout: 3600
   dependencies:
   - name: olares
     type: system
