@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: embedding
+  name: aimembqwen3vino
   namespace: {{ .Release.Namespace }}
   labels:
-    app: embedding
-    applications.app.bytetrade.io/name: embedding
+    app: aimembqwen3vino
+    applications.app.bytetrade.io/name: aimembqwen3vino
     applications.app.bytetrade.io/owner: {{ .Release.Namespace | trimSuffix "-aimighty" }}
-    io.kompose.service: embedding
+    io.kompose.service: aimembqwen3vino
 spec:
   replicas: {{ if eq (.Values.olaresEnv.EMBEDDER_MODE | default "cluster") "cluster" }}2{{ else }}1{{ end }}
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit | default 1 }}
   selector:
     matchLabels:
-      app: embedding
+      app: aimembqwen3vino
   strategy:
     type: {{ .Values.strategy.type | default "RollingUpdate" }}
     {{- if eq .Values.strategy.type "RollingUpdate" }}
@@ -24,12 +24,12 @@ spec:
   template:
     metadata:
       labels:
-        app: embedding
-        applications.app.bytetrade.io/name: embedding
+        app: aimembqwen3vino
+        applications.app.bytetrade.io/name: aimembqwen3vino
         applications.app.bytetrade.io/owner: {{ .Release.Namespace | trimSuffix "-aimighty" }}
-        applications.app.bytetrade.io/raw-app-name: embedding
+        applications.app.bytetrade.io/raw-app-name: aimembqwen3vino
         io.bytetrade.app: "true"
-        io.kompose.service: embedding
+        io.kompose.service: aimembqwen3vino
       annotations:
         applications.app.bytetrade.io/studio-expose-ports: ""
     spec:
@@ -40,7 +40,7 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             - labelSelector:
                 matchLabels:
-                  app: embedding
+                  app: aimembqwen3vino
               topologyKey: kubernetes.io/hostname
       {{- else }}
       # single mode: run on any node
