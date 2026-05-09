@@ -1,0 +1,58 @@
+apiVersion: sys.bytetrade.io/v1alpha1
+kind: AppEnv
+metadata:
+  name: aimembqwen3vino-aimighty
+  namespace: aimembqwen3vino-aimighty
+appName: aimembqwen3vino
+appOwner: aimighty
+envs:
+  - applyOnChange: true
+    editable: true
+    envName: TZ
+    type: string
+    value: Etc/UTC
+  - applyOnChange: true
+    editable: true
+    envName: MODEL_NAME
+    type: string
+    value: aimighty-embedding-4b
+  - applyOnChange: true
+    editable: true
+    envName: HF_MODEL_ID
+    type: string
+    value: Qwen/Qwen3-Embedding-4B
+  - applyOnChange: true
+    editable: true
+    envName: PORT
+    type: string
+    value: "9997"
+  - applyOnChange: true
+    editable: true
+    envName: MODEL_CACHE_DIR
+    type: string
+    value: /models_cache
+  - applyOnChange: true
+    editable: true
+    envName: OV_CACHE_DIR
+    type: string
+    value: /tmp/ov_cache
+  - applyOnChange: true
+    editable: true
+    envName: OV_DEVICE
+    type: string
+    value: CPU
+  - applyOnChange: true
+    editable: true
+    envName: PERFORMANCE_HINT
+    type: string
+    value: THROUGHPUT
+  - applyOnChange: true
+    editable: true
+    envName: NUM_STREAMS
+    type: string
+    value: "2"
+  - applyOnChange: true
+    editable: true
+    envName: EMBEDDER_MODE
+    type: string
+    value: cluster
