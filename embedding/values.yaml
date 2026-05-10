@@ -27,7 +27,7 @@ env:
   OV_DEVICE: CPU
   PERFORMANCE_HINT: THROUGHPUT
   NUM_STREAMS: '2'
-  HUGGING_FACE_HUB_TOKEN: ''
+ 
 securityContext: {}
 volumes:
   modelCache:
@@ -37,7 +37,7 @@ livenessProbe:
     path: /health
     port: 9997
     scheme: HTTP
-  initialDelaySeconds: 1800
+  initialDelaySeconds: 300
   periodSeconds: 60
   failureThreshold: 30
   timeoutSeconds: 5
