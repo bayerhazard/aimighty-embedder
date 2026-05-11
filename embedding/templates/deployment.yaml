@@ -140,7 +140,7 @@ spec:
               subPath: nginx.conf
             - name: dashboard-html
               mountPath: /usr/share/nginx/html
-       volumes:
+      volumes:
         - name: app-envoy-config
           emptyDir: {}
         - name: nginx-config
