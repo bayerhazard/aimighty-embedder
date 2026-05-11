@@ -10,7 +10,7 @@ metadata:
     applications.app.bytetrade.io/owner: {{ .Release.Namespace | trimSuffix "-aimighty" }}
     io.kompose.service: aimembqwen3vino
 spec:
-  replicas: {{ if eq (.Values.olaresEnv.EMBEDDER_MODE | default "cluster") "cluster" }}2{{ else }}1{{ end }}
+  replicas: '{{ if eq (.Values.olaresEnv.EMBEDDER_MODE | default "cluster") "cluster" }}2{{ else }}1{{ end }}'
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit | default 1 }}
   selector:
     matchLabels:
@@ -120,7 +120,7 @@ spec:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
-         startupProbe:
+          startupProbe:
             {{- toYaml .Values.startupProbe | nindent 12 }}
         # nginx Dashboard (Port 8080 = Olares Entrance)
         - name: nginx
