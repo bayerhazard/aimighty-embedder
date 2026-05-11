@@ -78,4 +78,4 @@ olaresEnv:
 
 # Userspace paths (overridden by Olares at install time)
 userspace:
-  appData: "/data/app-data"
+  appData: "/olares/rootfs/userspace/pvc-userspace-aimighty-phbiddku99qy4cuz"
