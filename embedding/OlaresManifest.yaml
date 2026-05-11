@@ -1,4 +1,4 @@
-olaresManifest.version: 0.11.0
+olaresManifest.version: "0.11.0"
 olaresManifest.type: app
 metadata:
   name: aimembqwen3vino
@@ -6,7 +6,7 @@ metadata:
   title: AIM Qwen3 Emb 4B OpenVINO
   description: Qwen3-Embedding-4B INT8 via OpenVINO
   icon: https://raw.githubusercontent.com/bayerhazard/aimighty-embedder/main/icon.png
-  version: 1.1.1
+  version: "1.1.1"
   categories:
   - AI
   - Developer Tools
