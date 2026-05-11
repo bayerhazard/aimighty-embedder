@@ -8,7 +8,7 @@ metadata:
   description: Qwen3-Embedding-4B INT8 via OpenVINO
   appid: aimembqwen3vino
   title: AIM Qwen3 Emb 4B OpenVINO
-  version: '1.1.6'
+  version: '1.1.7'
   categories:
     - AI
 entrances:
@@ -20,8 +20,9 @@ entrances:
     openMethod: window
     authLevel: internal
 spec:
-  versionName: '1.1.6'
+  versionName: '1.1.7'
   upgradeDescription: |
+    v1.1.7: Fixed YAML indentation in deployment.yaml (volumes section). Bumped version to force Olares re-fetch.
     v1.1.6: Bumped all versions to 1.1.6 for Olares consistency. Added hostPath persistence for /models_cache to prevent 4GB model re-download on every restart. Fixed Olares Store appData path.
     v1.1.4: Added nginx dashboard container with HTML monitoring UI. Service now exposes port 8080 for dashboard access. Set livenessProbe initialDelay to 1200s for reliable startup.
     v1.1.3: Fixed OlaresManifest structure to match Olares spec v0.10.0. Moved resource fields to spec section. Fixed manifest version compatibility.
