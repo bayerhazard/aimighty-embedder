@@ -12,5 +12,9 @@ spec:
       targetPort: {{ .Values.containerPort }}
       protocol: TCP
       name: http
+    - port: {{ .Values.dashboardPort }}
+      targetPort: {{ .Values.dashboardPort }}
+      protocol: TCP
+      name: dashboard
   selector:
     app: aimembqwen3vino

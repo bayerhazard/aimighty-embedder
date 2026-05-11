@@ -8,7 +8,7 @@ metadata:
   description: Qwen3-Embedding-4B INT8 via OpenVINO
   appid: aimembqwen3vino
   title: AIM Qwen3 Emb 4B OpenVINO
-  version: '1.1.3'
+  version: '1.1.4'
   categories:
     - AI
 entrances:
@@ -20,8 +20,9 @@ entrances:
     openMethod: window
     authLevel: internal
 spec:
-  versionName: '1.1.3'
+  versionName: '1.1.4'
   upgradeDescription: |
+    v1.1.4: Added nginx dashboard container with HTML monitoring UI. Service now exposes port 8080 for dashboard access. Set livenessProbe initialDelay to 1200s for reliable startup.
     v1.1.3: Fixed OlaresManifest structure to match Olares spec v0.10.0. Moved resource fields to spec section. Fixed manifest version compatibility.
     v1.1.1: Fixed missing icon in installed apps. Added icon URL to entrances and switched to raw.githubusercontent.com CDN.
     v1.1.0: Fixed TZ env type (int → string), reduced livenessProbe initialDelay from 30min to 5min, added resource limits to initContainer, cleaned up Dockerfile dependencies.
