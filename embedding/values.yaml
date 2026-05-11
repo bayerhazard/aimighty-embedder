@@ -2,17 +2,11 @@ image:
   repository: ghcr.io/bayerhazard/aimighty-embedder
   tag: igpu-v12
   pullPolicy: Always
-nginx:
-  image: nginx:alpine
 replicaCount: 1
 revisionHistoryLimit: 1
 containerPort: 9997
-dashboardPort: 8080
 strategy:
   type: RollingUpdate
-  rollingUpdate:
-    maxSurge: 25%
-    maxUnavailable: 25%
 resources:
   limits:
     cpu: '8'
@@ -20,13 +14,6 @@ resources:
   requests:
     cpu: '2'
     memory: 8Gi
-nginxResources:
-  limits:
-    cpu: 200m
-    memory: 64Mi
-  requests:
-    cpu: 50m
-    memory: 32Mi
 env:
   TZ: Etc/UTC
   MODEL_NAME: aimighty-embedding-4b
@@ -46,7 +33,7 @@ livenessProbe:
     path: /health
     port: 9997
     scheme: HTTP
-  initialDelaySeconds: 1200
+  initialDelaySeconds: 300
   periodSeconds: 60
   failureThreshold: 30
   timeoutSeconds: 5
@@ -74,7 +61,7 @@ service:
 
 # Olares-specific environment variables (overridden by Olares at install time)
 olaresEnv:
-  EMBEDDER_MODE: "cluster"
+  EMBEDDER_MODE: "single"
 
 # Userspace paths (overridden by Olares at install time)
 userspace:
