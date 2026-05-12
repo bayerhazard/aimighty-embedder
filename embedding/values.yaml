@@ -60,10 +60,6 @@ service:
   type: ClusterIP
   port: 9997
 
-# Olares-specific environment variables (overridden by Olares at install time)
-olaresEnv:
-  EMBEDDER_MODE: "single"
-
 # Userspace paths (overridden by Olares at install time)
 userspace:
   appData: "/olares/rootfs/userspace/pvc-userspace-aimighty-phbiddku99qy4cuz"
