@@ -8,7 +8,7 @@ metadata:
   description: Qwen3-Embedding-4B INT8 via OpenVINO
   appid: aimembqwen3vino
   title: AIM Qwen3 Emb 4B OpenVINO
-  version: '1.2.2'
+  version: '1.2.3'
   categories:
     - AI
 entrances:
@@ -20,7 +20,7 @@ entrances:
     openMethod: window
     authLevel: internal
 spec:
-  versionName: '1.2.2'
+  versionName: '1.2.3'
   upgradeDescription: |
     v1.2.0: Stable production release. All features tested and verified. v1.1.11: Added envs section to OlaresManifest for App Settings UI. Moved configurable environment variables (EMBEDDER_MODE, OV_DEVICE, PERFORMANCE_HINT, NUM_STREAMS) from env to olaresEnv so Olares can override them at install/runtime. Simplified deployment.yaml env rendering. v1.1.10: Fixed OlaresManifest version mismatch (was 1.1.9 in 1.1.10 chart). Removed progress field blocking Open button. — Reverted to clean working 1.1.3 structure. Removed nginx dashboard container and inline ConfigMap (embedder serves HTML natively on port 9997). Removed broken YAML indentation fixes. Fixed replicas template (no single-quotes). Removed dashboardPort. Kept models_cache hostPath persistence.
     v1.1.8: Fixed startupProbe indentation (9→10 spaces) which caused YAML parse error. Single-quoted replicas template for safe YAML parsing.
