@@ -21,6 +21,10 @@ env:
   PORT: '9997'
   MODEL_CACHE_DIR: /models_cache
   OV_CACHE_DIR: /tmp/ov_cache
+
+# Olares-configurable environment variables (shown in App Settings UI)
+olaresEnv:
+  EMBEDDER_MODE: "single"
   OV_DEVICE: CPU
   PERFORMANCE_HINT: THROUGHPUT
   NUM_STREAMS: '2'

@@ -66,8 +66,6 @@ spec:
             - containerPort: {{ .Values.containerPort }}
               protocol: TCP
           env:
-            - name: EMBEDDER_MODE
-              value: {{ .Values.olaresEnv.EMBEDDER_MODE | default "single" | quote }}
             {{- range $key, $value := .Values.env }}
             {{- if ne $value "" }}
             - name: {{ $key }}
@@ -75,7 +73,7 @@ spec:
             {{- end }}
             {{- end }}
             {{- range $key, $value := .Values.olaresEnv }}
-            {{- if ne $key "EMBEDDER_MODE" }}
+            {{- if ne $value "" }}
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
