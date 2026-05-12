@@ -8,7 +8,7 @@ metadata:
   description: Qwen3-Embedding-4B INT8 via OpenVINO
   appid: aimembqwen3vino
   title: AIM Qwen3 Emb 4B
-  version: '1.2.7'
+  version: '1.2.8'
   categories:
     - AI
 entrances:
@@ -20,8 +20,9 @@ entrances:
     openMethod: window
     authLevel: internal
 spec:
-  versionName: '1.2.7'
+  versionName: '1.2.8'
   upgradeDescription: |
+    v1.2.8: Fixed env vars in chart OlaresManifest — now editable with dropdowns. Added MODEL_NAME.
     v1.2.7: Made env vars editable in Olares UI. Added MODEL_NAME env. Renamed GPU option to iGPU.
     v1.2.6: Updated app title to "AIM Qwen3 Emb 4B" and entrance label to "Embedder".
     v1.2.5: Version bump to 1.2.5.
@@ -82,21 +83,51 @@ options:
 envs:
   - envName: EMBEDDER_MODE
     required: false
+    default: "cluster"
+    type: string
+    editable: true
     applyOnChange: true
-    valueFrom:
-      envName: EMBEDDER_MODE
+    description: "Deployment mode: 'cluster' = 2 pods across nodes (~48GB RAM), 'single' = 1 pod (~24GB RAM)"
+    options:
+      - title: Cluster mode (2 pods, ~48GB RAM)
+        value: "cluster"
+      - title: Single node (1 pod, ~24GB RAM)
+        value: "single"
   - envName: OV_DEVICE
     required: false
+    default: "CPU"
+    type: string
+    editable: true
     applyOnChange: true
-    valueFrom:
-      envName: OV_DEVICE
+    description: "OpenVINO inference device"
+    options:
+      - title: CPU (recommended)
+        value: "CPU"
+      - title: iGPU (requires compatible driver)
+        value: "GPU"
   - envName: PERFORMANCE_HINT
     required: false
+    default: "THROUGHPUT"
+    type: string
+    editable: true
     applyOnChange: true
-    valueFrom:
-      envName: PERFORMANCE_HINT
+    description: "OpenVINO performance optimization mode"
+    options:
+      - title: THROUGHPUT (maximize requests/sec)
+        value: "THROUGHPUT"
+      - title: LATENCY (minimize response time)
+        value: "LATENCY"
   - envName: NUM_STREAMS
     required: false
+    default: "2"
+    type: int
+    editable: true
     applyOnChange: true
-    valueFrom:
-      envName: NUM_STREAMS
+    description: "Number of parallel inference streams (optimal for CPU: 2)"
+  - envName: MODEL_NAME
+    required: false
+    default: "aimighty-embedding-4b"
+    type: string
+    editable: true
+    applyOnChange: true
+    description: "Model name exposed in the OpenAI-compatible API"
