@@ -7,21 +7,22 @@ metadata:
   icon: https://raw.githubusercontent.com/bayerhazard/aimighty-embedder/main/icon.png
   description: Qwen3-Embedding-4B INT8 via OpenVINO
   appid: aimembqwen3vino
-  title: AIM Qwen3 Emb 4B OpenVINO
-  version: '1.2.5'
+  title: AIM Qwen3 Emb 4B
+  version: '1.2.6'
   categories:
     - AI
 entrances:
   - name: aimembqwen3vino
     port: 9997
     host: aimembqwen3vino
-    title: AIM Qwen3 Emb 4B OpenVINO
+    title: Embedder
     icon: https://raw.githubusercontent.com/bayerhazard/aimighty-embedder/main/icon.png
     openMethod: window
     authLevel: internal
 spec:
-  versionName: "1.2.5"
+  versionName: "1.2.6"
   upgradeDescription: |
+    v1.2.6: Updated app title to "AIM Qwen3 Emb 4B" and entrance label to "Embedder".
     v1.2.5: Version bump to 1.2.5.
     v1.2.0: Bumped to stable production version. All features tested and verified. Clean version number.
     v1.1.10: REMOVED broken hostPath for /models_cache — it was hiding the pre-baked OpenVINO model in the Docker image. Now using image-internal model only. — Reverted to clean working 1.1.3 structure. Removed nginx dashboard container and inline ConfigMap (embedder serves HTML natively on port 9997). Removed broken YAML indentation fixes. Fixed replicas template (no single-quotes). Removed dashboardPort. Kept models_cache hostPath persistence.
