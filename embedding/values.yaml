@@ -25,9 +25,6 @@ env:
   PERFORMANCE_HINT: THROUGHPUT
   NUM_STREAMS: '2'
 securityContext: {}
-volumes:
-  modelCache:
-    mountPath: /models_cache
 livenessProbe:
   httpGet:
     path: /health

@@ -86,8 +86,6 @@ spec:
             - name: app-envoy-config
               mountPath: /etc/envoy-config
               readOnly: true
-            - name: models-cache
-              mountPath: /models_cache
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
@@ -97,7 +95,3 @@ spec:
       volumes:
         - name: app-envoy-config
           emptyDir: {}
-        - name: models-cache
-          hostPath:
-            path: "{{ .Values.userspace.appData }}/aimembqwen3vino/models_cache"
-            type: DirectoryOrCreate

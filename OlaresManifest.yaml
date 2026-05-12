@@ -8,7 +8,7 @@ metadata:
   description: Qwen3-Embedding-4B INT8 via OpenVINO
   appid: aimembqwen3vino
   title: AIM Qwen3 Emb 4B OpenVINO
-  version: '1.1.9'
+  version: '1.1.10'
   categories:
     - AI
 entrances:
@@ -20,9 +20,9 @@ entrances:
     openMethod: window
     authLevel: internal
 spec:
-  versionName: '1.1.9'
+  versionName: "1.1.10"
   upgradeDescription: |
-    v1.1.9: RADICAL RESET — Reverted to clean working 1.1.3 structure. Removed nginx dashboard container and inline ConfigMap (embedder serves HTML natively on port 9997). Removed broken YAML indentation fixes. Fixed replicas template (no single-quotes). Removed dashboardPort. Kept models_cache hostPath persistence.
+    v1.1.10: REMOVED broken hostPath for /models_cache — it was hiding the pre-baked OpenVINO model in the Docker image. Now using image-internal model only. — Reverted to clean working 1.1.3 structure. Removed nginx dashboard container and inline ConfigMap (embedder serves HTML natively on port 9997). Removed broken YAML indentation fixes. Fixed replicas template (no single-quotes). Removed dashboardPort. Kept models_cache hostPath persistence.
     v1.1.8: Fixed startupProbe indentation (9→10 spaces) which caused YAML parse error. Single-quoted replicas template for safe YAML parsing.
     v1.1.7: Fixed YAML indentation in deployment.yaml (volumes section). Bumped version to force Olares re-fetch.
     v1.1.6: Bumped all versions to 1.1.6 for Olares consistency. Added hostPath persistence for /models_cache to prevent 4GB model re-download on every restart. Fixed Olares Store appData path.
