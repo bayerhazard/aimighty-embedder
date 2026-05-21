@@ -10,6 +10,48 @@ import uvicorn
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("embedder")
 
+# Creative Cooperative Optimization: Run with nice value 10 (lower priority)
+# This allows the parsing module (or other CPU-heavy ingestion processes) to take P-cores
+# when needed, while the embedder gracefully yields and runs on remaining resources.
+# When the parser is idle, the embedder automatically bursts to utilize the full CPU power.
+try:
+    os.nice(10)
+    log.info("Successfully set process niceness to 10 (cooperative background priority)")
+except Exception as e:
+    log.warning("Could not set process niceness: %s", e)
+
+# Create symlinks for Intel GPU compute runtimes if running with GPU enabled
+if os.path.exists("/host_libs"):
+    log.info("Setting up Intel GPU runtime symlinks from host libraries...")
+    libs = [
+        ("libOpenCL.so.1", "libOpenCL.so.1"),
+        ("libOpenCL.so.1", "libOpenCL.so"),
+        ("libigc.so.1", "libigc.so.1"),
+        ("libigdfcl.so.1", "libigdfcl.so.1"),
+        ("libigdgmm.so.12", "libigdgmm.so.12"),
+        ("libopencl-clang.so.14", "libopencl-clang.so.14"),
+        ("libLLVMSPIRVLib.so.14", "libLLVMSPIRVLib.so.14"),
+        ("libclang-cpp.so.14", "libclang-cpp.so.14"),
+        ("libLLVM-14.so.1", "libLLVM-14.so.1"),
+        ("libLLVM-14.so.1", "libLLVM-14.so"),
+        # Level Zero dependencies for Arrow Lake iGPU compute
+        ("libze_intel_gpu.so.1", "libze_intel_gpu.so.1"),
+        ("libze_intel_gpu.so.1", "libze_intel_gpu.so"),
+        ("libze_loader.so.1", "libze_loader.so.1"),
+        ("libze_loader.so.1", "libze_loader.so"),
+        ("libze_tracing_layer.so.1", "libze_tracing_layer.so.1"),
+        ("libze_validation_layer.so.1", "libze_validation_layer.so.1"),
+    ]
+    for src_name, dst_name in libs:
+        src = os.path.join("/host_libs", src_name)
+        dst = os.path.join("/usr/lib/x86_64-linux-gnu", dst_name)
+        if os.path.exists(src) and not os.path.exists(dst):
+            try:
+                os.symlink(src, dst)
+                log.info("Created symlink: %s -> %s", dst, src)
+            except Exception as e:
+                log.error("Failed to symlink %s: %s", dst, e)
+
 MODEL_DIR  = os.getenv("MODEL_DIR", "/models_cache/aimighty-embedding-4b")
 MODEL_NAME = os.getenv("MODEL_NAME", "aimighty-embedding-4b")
 PORT       = int(os.getenv("PORT", "9997"))
@@ -17,17 +59,17 @@ PORT       = int(os.getenv("PORT", "9997"))
 OV_DEVICE = os.getenv("OV_DEVICE", "CPU")
 OV_PERFORMANCE_HINT = os.getenv("PERFORMANCE_HINT", "LATENCY")
 OV_NUM_STREAMS = os.getenv("NUM_STREAMS", "1")
+CPU_PINNING = os.getenv("CPU_PINNING", "NO")  # Default to NO for cooperative resource sharing
 
-
-
-def _build_ov_config():
+def _build_ov_config(device):
     cfg = {
-        "PERFORMANCE_HINT": OV_PERFORMANCE_HINT,
-        "NUM_STREAMS": OV_NUM_STREAMS,
+        "PERFORMANCE_HINT": "LATENCY",
+        "NUM_STREAMS": "1",
     }
-    if OV_DEVICE.upper() == "CPU":
+    if device.upper() == "CPU":
+        cfg["INFERENCE_NUM_THREADS"] = "8"
         cfg["SCHEDULING_CORE_TYPE"] = "PCORE_ONLY"
-        cfg["ENABLE_CPU_PINNING"] = "NO"
+        cfg["ENABLE_CPU_PINNING"] = "YES" if CPU_PINNING.upper() == "YES" else "NO"
     return cfg
 
 app = FastAPI()
@@ -39,7 +81,6 @@ try:
     _libc = ctypes.CDLL("libc.so.6", mode=ctypes.RTLD_GLOBAL)
 except (AttributeError, OSError):
     _libc = None
-# Semaphore removed - threading.Lock already serializes inference
 
 def get_model():
     global _model, _tokenizer, _model_ready
@@ -59,10 +100,10 @@ def get_model():
 
     log.info("Loading OpenVINO model on %s...", OV_DEVICE)
 
-    ov_config = _build_ov_config()
+    device_to_use = OV_DEVICE
+    ov_config = _build_ov_config(device_to_use)
     log.info("OpenVINO config: %s", ov_config)
 
-    device_to_use = OV_DEVICE
     try:
         _model = OVModelForFeatureExtraction.from_pretrained(
             MODEL_DIR,
@@ -70,18 +111,22 @@ def get_model():
             compile=False,
             ov_config=ov_config,
         )
-        log.info("Model loaded on %s successfully.", device_to_use)
-    except RuntimeError as e:
-        if "GPU" in str(e) and device_to_use.upper() == "GPU":
-            log.warning("GPU not available, falling back to CPU: %s", e)
+        # Force compilation inside try block to catch any GPU/OpenCL driver load issues
+        _model.compile()
+        log.info("Model loaded and compiled on %s successfully.", device_to_use)
+    except Exception as e:
+        if "GPU" in device_to_use.upper():
+            log.warning("GPU compile failed, falling back to CPU: %s", e)
             device_to_use = "CPU"
+            ov_config_fallback = _build_ov_config("CPU")
             _model = OVModelForFeatureExtraction.from_pretrained(
                 MODEL_DIR,
                 device="CPU",
                 compile=False,
-                ov_config={"PERFORMANCE_HINT": "LATENCY", "NUM_STREAMS": "1"},
+                ov_config=ov_config_fallback,
             )
-            log.info("Model loaded on CPU (fallback) successfully.")
+            _model.compile()
+            log.info("Model loaded and compiled on CPU (fallback) successfully.")
         else:
             raise
 
@@ -143,10 +188,10 @@ def root():
 <body>
 <div class="card">
   <div class="header">
-    <img class="icon" src="https://github.com/bayerhazard/aimighty-embedder/raw/main/icon.png" alt="Aimighty Embedder">
+    <img class="icon" src="https://github.com/bayerhazard/aimighty-embedder" alt="Aimighty Embedder">
     <div>
-      <h1>Aimighty Embedder</h1>
-      <p class="subtitle">OpenAI-compatible embedding API &middot; OpenVINO on Intel iGPU</p>
+      <h1>Aimighty Embedder (Optimized)</h1>
+      <p class="subtitle">OpenAI-compatible embedding API &middot; OpenVINO on Intel CPU/iGPU</p>
       <span class="badge"><span class="dot"></span>{status_text}</span>
     </div>
   </div>
@@ -195,9 +240,7 @@ def models():
     }
 
 def _run_inference(texts):
-    """Synchronous inference — runs in a worker thread to keep the event loop free.
-    The threading.Lock serialises access so the OpenVINO engine never sees
-    concurrent infer requests (prevents 'Infer Request is busy')."""
+    """Synchronous inference — runs in a worker thread to keep the event loop free."""
     import torch
 
     with _infer_lock:
@@ -209,14 +252,10 @@ def _run_inference(texts):
         with torch.no_grad():
             out = model(**enc)
 
-        # Qwen3-Embedding requires LAST TOKEN pooling (not mean pooling)
-        # Reference: https://huggingface.co/Qwen/Qwen3-Embedding-4B
+        # Qwen3-Embedding requires LAST TOKEN pooling
         last_hidden = out[0]
         attention_mask = enc["attention_mask"]
-        # With padding_side="left", last token is always at position -1
-        # tokenizer uses padding_side="left", so last token is always at position -1
         pooled = last_hidden[:, -1]
-        # L2 normalize (per HF model card)
         pooled = torch.nn.functional.normalize(pooled, p=2, dim=1)
         vecs = pooled.tolist()
         total = int(enc["input_ids"].numel())
@@ -253,20 +292,19 @@ async def embed(req: EmbReq):
         "usage": {"prompt_tokens": total, "total_tokens": total}
     }
 
+@app.on_event("startup")
+def startup_event():
+    log.info("FastAPI startup: warming up model...")
+    try:
+        model, tok = get_model()
+        import torch
+        enc = tok(["warmup"], padding=True, truncation=True, return_tensors="pt")
+        with _infer_lock:
+            with torch.no_grad():
+                model(**enc)
+        log.info("Warmup inference complete. Model ready.")
+    except Exception as e:
+        log.exception("Model warmup failed: %s", e)
+
 if __name__ == "__main__":
-    import threading
-    def warmup():
-        import time as _time
-        _time.sleep(2)
-        try:
-            model, tok = get_model()
-            import torch
-            enc = tok(["warmup"], padding=True, truncation=True, return_tensors="pt")
-            with _infer_lock:
-                with torch.no_grad():
-                    model(**enc)
-            log.info("Warmup inference complete. Model ready.")
-        except Exception as e:
-            log.exception("Model warmup failed: %s", e)
-    threading.Thread(target=warmup, daemon=True).start()
-    uvicorn.run(app, host="0.0.0.0", port=PORT)
+    uvicorn.run("server:app", host="0.0.0.0", port=PORT, workers=2)
