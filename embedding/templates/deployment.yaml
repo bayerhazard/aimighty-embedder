@@ -9,7 +9,7 @@ metadata:
     applications.app.bytetrade.io/owner: {{ .Release.Namespace | trimSuffix "-aimighty" }}
     io.kompose.service: aimembqwen3vino
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ if or (eq (.Values.olaresEnv.EMBEDDER_MODE | default "cluster") "cluster") (eq .Values.olaresEnv.EMBEDDER_MODE "Cluster_Mode") }}2{{ else }}1{{ end }}
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
   selector:
     matchLabels:
@@ -25,6 +25,18 @@ spec:
         io.bytetrade.app: "true"
         io.kompose.service: aimembqwen3vino
     spec:
+      {{- if or (eq (.Values.olaresEnv.EMBEDDER_MODE | default "cluster") "cluster") (eq .Values.olaresEnv.EMBEDDER_MODE "Cluster_Mode") }}
+      # cluster mode: spread pods across both nodes
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: aimembqwen3vino
+              topologyKey: kubernetes.io/hostname
+      {{- else }}
+      # single mode: run on any node
+      {{- end }}
       initContainers:
         - name: patch-envoy-timeout
           image: beclab/busybox:1.28
