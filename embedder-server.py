@@ -146,8 +146,9 @@ def root():
     status_color = "#10b981" if _model_ready else "#f59e0b"
     status_text = "Ready" if _model_ready else "Loading model..."
     device = OV_DEVICE.upper()
-    mode = os.getenv("EMBEDDER_MODE", "single")
-    mode_label = "Cluster (2 iGPUs)" if mode == "cluster" else "Single (1 iGPU)"
+    mode = os.getenv("EMBEDDER_MODE", "Single_Node")
+    is_cluster = "cluster" in mode.lower()
+    mode_label = "Cluster Mode (2 Workers)" if is_cluster else "Single Node (1 Worker)"
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -307,4 +308,8 @@ def startup_event():
         log.exception("Model warmup failed: %s", e)
 
 if __name__ == "__main__":
-    uvicorn.run("server:app", host="0.0.0.0", port=PORT, workers=2)
+    mode = os.getenv("EMBEDDER_MODE", "Single_Node")
+    is_cluster = "cluster" in mode.lower()
+    num_workers = 2 if is_cluster else 1
+    log.info("Starting uvicorn with %d worker(s) in %s mode", num_workers, mode)
+    uvicorn.run("server:app", host="0.0.0.0", port=PORT, workers=num_workers)
