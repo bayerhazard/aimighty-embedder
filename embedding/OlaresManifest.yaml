@@ -8,7 +8,7 @@ metadata:
   description: Qwen3-Embedding-4B INT8 via OpenVINO
   appid: aimembqwen3vino
   title: AIM Qwen3 Emb 4B
-  version: '1.2.9'
+  version: '1.5.0'
   categories:
     - AI
 entrances:
@@ -20,7 +20,7 @@ entrances:
     openMethod: window
     authLevel: internal
 spec:
-  versionName: '1.2.9'
+  versionName: '1.5.0'
   upgradeDescription: |
     v1.2.9: Added adaptive Single_Node / Cluster_Mode uvicorn workers and cooperative process niceness CPU optimization.
     v1.2.8: Fixed env vars in chart OlaresManifest — now editable with dropdowns. Added MODEL_NAME.

@@ -8,7 +8,7 @@ metadata:
   description: Qwen3-Embedding-4B INT8 via OpenVINO
   appid: aimembqwen3vino
   title: AIM Qwen3 Emb 4B
-  version: '1.2.9'
+  version: '1.5.0'
   categories:
     - AI
 entrances:
@@ -22,6 +22,7 @@ entrances:
 spec:
   versionName: "1.2.9"
   upgradeDescription: |
+    v1.5.0: Version bump to force Olares re-sync.
     v1.2.9: Added adaptive Single_Node / Cluster_Mode uvicorn workers and cooperative process niceness CPU optimization.
     v1.2.8: Fixed env vars in chart OlaresManifest — now editable with dropdowns. Added MODEL_NAME.
     v1.2.7: Made env vars editable in Olares UI. Added MODEL_NAME env. Renamed GPU option to iGPU.
