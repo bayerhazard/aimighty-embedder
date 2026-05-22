@@ -7,23 +7,23 @@ metadata:
   icon: https://raw.githubusercontent.com/bayerhazard/aimighty-embedder/main/icon.png
   description: Qwen3-Embedding-4B INT8 via OpenVINO
   appid: aimembqwen3vino
-  title: AIM Qwen3 Emb 4B
-  version: '1.5.0'
+  title: Qwen Embedding 4B
+  version: '1.5.1'
   categories:
     - AI
 entrances:
   - name: aimembqwen3vino
     port: 9997
     host: aimembqwen3vino
-    title: Embedder
+    title: Qwen Embedding 4B
     icon: https://raw.githubusercontent.com/bayerhazard/aimighty-embedder/main/icon.png
     openMethod: window
     authLevel: internal
 spec:
-  versionName: "1.2.9"
+  versionName: "1.5.1"
   upgradeDescription: |
+    v1.5.1: Fixed app title to Qwen Embedding 4B for proper display in Olares Settings.
     v1.5.0: Version bump to force Olares re-sync.
-    v1.2.9: Added adaptive Single_Node / Cluster_Mode uvicorn workers and cooperative process niceness CPU optimization.
     v1.2.8: Fixed env vars in chart OlaresManifest — now editable with dropdowns. Added MODEL_NAME.
     v1.2.7: Made env vars editable in Olares UI. Added MODEL_NAME env. Renamed GPU option to iGPU.
     v1.2.6: Updated app title to "AIM Qwen3 Emb 4B" and entrance label to "Embedder".
