@@ -7,21 +7,22 @@ metadata:
   icon: https://raw.githubusercontent.com/bayerhazard/aimighty-embedder/main/icon.png
   description: Qwen3-Embedding-4B INT8 via OpenVINO
   appid: aimembqwen3vino
-  title: Qwen Embedding 4B
-  version: '1.5.1'
+  title: Qwen3 Embedding 4B VINO AIM
+  version: '1.5.2'
   categories:
     - AI
 entrances:
   - name: aimembqwen3vino
     port: 9997
     host: aimembqwen3vino
-    title: Qwen Embedding 4B
+    title: Qwen3 Embedding 4B VINO AIM
     icon: https://raw.githubusercontent.com/bayerhazard/aimighty-embedder/main/icon.png
     openMethod: window
     authLevel: internal
 spec:
-  versionName: "1.5.1"
+  versionName: "1.5.2"
   upgradeDescription: |
+    v1.5.2: Fixed app title to Qwen3 Embedding 4B VINO AIM (was Qwen Embedding 4B). Proper labeling in Market and Settings.
     v1.5.1: Fixed app title to Qwen Embedding 4B for proper display in Olares Settings.
     v1.5.0: Version bump to force Olares re-sync.
     v1.2.8: Fixed env vars in chart OlaresManifest — now editable with dropdowns. Added MODEL_NAME.
