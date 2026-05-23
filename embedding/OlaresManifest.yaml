@@ -7,15 +7,15 @@ metadata:
   icon: https://raw.githubusercontent.com/bayerhazard/aimighty-embedder/main/icon.png
   description: Qwen3-Embedding-4B INT8 via OpenVINO
   appid: aimembqwen3vino
-  title: Qwen Embedding 4B
-  version: '1.5.1'
+  title: Qwen3 Embedding
+  version: '1.5.5'
   categories:
     - AI
 entrances:
   - name: aimembqwen3vino
     port: 9997
     host: aimembqwen3vino
-    title: Qwen Embedding 4B
+    title: Qwen3 Embedding
     icon: https://raw.githubusercontent.com/bayerhazard/aimighty-embedder/main/icon.png
     openMethod: window
     authLevel: internal
