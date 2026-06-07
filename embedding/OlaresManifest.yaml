@@ -20,8 +20,9 @@ entrances:
     openMethod: window
     authLevel: internal
 spec:
-  versionName: '1.5.1'
+  versionName: '1.5.6'
   upgradeDescription: |
+    v1.5.6: Fixed rolling update strategy (maxSurge=0, maxUnavailable=1) to prevent pod anti-affinity deadlock on restart. Increased revisionHistoryLimit to 3 for rollback safety.
     v1.5.1: Fixed app title to Qwen Embedding 4B for proper display in Olares Settings.
     v1.2.8: Fixed env vars in chart OlaresManifest — now editable with dropdowns. Added MODEL_NAME.
     v1.2.7: Made env vars editable in Olares UI. Added MODEL_NAME env. Renamed GPU option to iGPU.

@@ -8,7 +8,7 @@ metadata:
   description: Qwen3-Embedding-4B INT8 via OpenVINO
   appid: aimembqwen3vino
   title: Qwen3 Embedding
-  version: '1.5.5'
+  version: '1.5.6'
   categories:
     - AI
 entrances:
@@ -20,8 +20,9 @@ entrances:
     openMethod: window
     authLevel: internal
 spec:
-  versionName: "1.5.5"
+  versionName: "1.5.6"
   upgradeDescription: |
+    v1.5.6: Fixed rolling update strategy (maxSurge=0, maxUnavailable=1) to prevent pod anti-affinity deadlock on restart. Increased revisionHistoryLimit to 3 for rollback safety.
     v1.5.5: Release v1.5.5. Final naming corrections and entrance status fix.
     v1.5.3: Fixed app title to Qwen3 Embedding for Settings display (shorter form).
     v1.5.2: Fixed app title to Qwen3 Embedding 4B VINO AIM (was Qwen Embedding 4B). Proper labeling in Market and Settings.
