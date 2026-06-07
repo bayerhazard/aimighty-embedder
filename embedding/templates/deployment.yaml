@@ -16,6 +16,11 @@ spec:
       app: aimembqwen3vino
   strategy:
     type: {{ .Values.strategy.type }}
+    {{- if .Values.strategy.rollingUpdate }}
+    rollingUpdate:
+      maxSurge: {{ .Values.strategy.rollingUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.strategy.rollingUpdate.maxUnavailable }}
+    {{- end }}
   template:
     metadata:
       labels:

@@ -3,10 +3,13 @@ image:
   tag: igpu-v12
   pullPolicy: Always
 replicaCount: 1
-revisionHistoryLimit: 1
+revisionHistoryLimit: 3
 containerPort: 9997
 strategy:
   type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 0
+    maxUnavailable: 1
 resources:
   limits:
     cpu: '8'
