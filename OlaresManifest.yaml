@@ -8,7 +8,7 @@ metadata:
   description: Qwen3-Embedding-4B INT8 via OpenVINO
   appid: aimembqwen3vino
   title: Qwen3 Embedding
-  version: '1.6.3'
+  version: '1.6.5'
   categories:
     - AI Agents
 entrances:
