@@ -12,7 +12,7 @@ metadata:
   description: Qwen3-Embedding-4B INT8 via OpenVINO
   appid: aimembqwen3vino
   title: Qwen3 Embedding
-  version: '1.6.9'
+  version: '1.7.0'
   categories:
     - AI
 entrances:
@@ -24,9 +24,10 @@ entrances:
     openMethod: window
     authLevel: internal
 spec:
-  versionName: '1.6.9'
+  versionName: '1.7.0'
   upgradeDescription: |
-    v1.6.9: deployment.replicas auf {{ .Values.workloads.aimembqwen3vino.replicaCount }} umgestellt + workloads.aimembqwen3vino.replicaCount in values.yaml (app-service validiert v3: replicas muss aus values.yaml workloads.<name>.replicaCount stammen, konditionale EMBEDDER_MODE-Replicas wurden abgelehnt). Cluster-Modus (2 Pods) jetzt über replicaCount einstellbar.
+    v1.7.0: accelerator: [{mode: cpu}] im OlaresManifest ergänzt (app-service v3 AutoSelectMode: ohne accelerator-Deklaration → "No matching GPU type" 400, da ComputeResourceModes leer). CPU-Apps müssen den Modus explizit deklarieren.
+    v1.6.9: deployment.replicas auf .Values.workloads.aimembqwen3vino.replicaCount (v3-Validation).
     v1.6.8: Olares-Dependency auf >=1.12.6-0 gesetzt (apiVersion v3 erfordert Olares 1.12.6+).
     v1.6.7: Migrate OlaresManifest v2 → v3 (olaresManifest.version 0.10.0 → 0.12.0, apiVersion v2 → v3, workloadReplicas ergänzt). App-service auf Olares 1.12.6 lehnt apiVersion v2 ab ("app with apiVersion v2 is incompatible and cannot be install", HTTP 403).
     v1.6.6: Version alignment — Chart/Chart-Manifest/Root-Manifest hatten 1.5.6/1.5.6/1.6.5 (Golden-Rule-Verletzung). Chart wird jetzt sauber aus dem embedding/-Ordner gepackt (vorher wurde das Repo-Root gezippt). Keine funktionalen Änderungen zu 1.6.5.
@@ -76,6 +77,8 @@ spec:
     - en-US
   supportArch:
     - amd64
+  accelerator:
+    - mode: cpu
   limitedCpu: 4
   requiredCpu: 2
   requiredMemory: 24Gi
