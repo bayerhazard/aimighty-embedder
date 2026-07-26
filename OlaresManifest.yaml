@@ -8,9 +8,9 @@ metadata:
   description: Qwen3-Embedding-4B INT8 via OpenVINO
   appid: aimembqwen3vino
   title: Qwen3 Embedding
-  version: '1.6.5'
+  version: '1.6.6'
   categories:
-    - AI Agents
+    - AI
 entrances:
   - name: aimembqwen3vino
     port: 9997
@@ -20,23 +20,20 @@ entrances:
     openMethod: window
     authLevel: internal
 spec:
-  versionName: "1.5.6"
+  versionName: '1.6.6'
   upgradeDescription: |
+    v1.6.6: Version alignment — Chart/Chart-Manifest/Root-Manifest hatten 1.5.6/1.5.6/1.6.5 (Golden-Rule-Verletzung). Chart wird jetzt sauber aus dem embedding/-Ordner gepackt (vorher wurde das Repo-Root gezippt). Keine funktionalen Änderungen zu 1.6.5.
     v1.5.6: Fixed rolling update strategy (maxSurge=0, maxUnavailable=1) to prevent pod anti-affinity deadlock on restart. Increased revisionHistoryLimit to 3 for rollback safety.
-    v1.5.5: Release v1.5.5. Final naming corrections and entrance status fix.
-    v1.5.3: Fixed app title to Qwen3 Embedding for Settings display (shorter form).
-    v1.5.2: Fixed app title to Qwen3 Embedding 4B VINO AIM (was Qwen Embedding 4B). Proper labeling in Market and Settings.
     v1.5.1: Fixed app title to Qwen Embedding 4B for proper display in Olares Settings.
-    v1.5.0: Version bump to force Olares re-sync.
     v1.2.8: Fixed env vars in chart OlaresManifest — now editable with dropdowns. Added MODEL_NAME.
     v1.2.7: Made env vars editable in Olares UI. Added MODEL_NAME env. Renamed GPU option to iGPU.
     v1.2.6: Updated app title to "AIM Qwen3 Emb 4B" and entrance label to "Embedder".
     v1.2.5: Version bump to 1.2.5.
-    v1.2.0: Bumped to stable production version. All features tested and verified. Clean version number.
-    v1.1.10: REMOVED broken hostPath for /models_cache — it was hiding the pre-baked OpenVINO model in the Docker image. Now using image-internal model only. — Reverted to clean working 1.1.3 structure. Removed nginx dashboard container and inline ConfigMap (embedder serves HTML natively on port 9997). Removed broken YAML indentation fixes. Fixed replicas template (no single-quotes). Removed dashboardPort. Kept models_cache hostPath persistence.
+    v1.2.0: Stable production release. All features tested and verified. v1.1.11: Added envs section to OlaresManifest for App Settings UI. Moved configurable environment variables (EMBEDDER_MODE, OV_DEVICE, PERFORMANCE_HINT, NUM_STREAMS) from env to olaresEnv so Olares can override them at install/runtime. Simplified deployment.yaml env rendering. v1.1.10: Fixed OlaresManifest version mismatch (was 1.1.9 in 1.1.10 chart). Removed progress field blocking Open button. — Reverted to clean working 1.1.3 structure. Removed nginx dashboard container and inline ConfigMap (embedder serves HTML natively on port 9997). Removed broken YAML indentation fixes. Fixed replicas template (no single-quotes). Removed dashboardPort. Kept models_cache hostPath persistence.
     v1.1.8: Fixed startupProbe indentation (9→10 spaces) which caused YAML parse error. Single-quoted replicas template for safe YAML parsing.
     v1.1.7: Fixed YAML indentation in deployment.yaml (volumes section). Bumped version to force Olares re-fetch.
     v1.1.6: Bumped all versions to 1.1.6 for Olares consistency. Added hostPath persistence for /models_cache to prevent 4GB model re-download on every restart. Fixed Olares Store appData path.
+    v1.1.4: Added nginx dashboard container with HTML monitoring UI. Service now exposes port 8080 for dashboard access. Set livenessProbe initialDelay to 1200s for reliable startup.
     v1.1.3: Fixed OlaresManifest structure to match Olares spec v0.10.0. Moved resource fields to spec section. Fixed manifest version compatibility.
     v1.1.1: Fixed missing icon in installed apps. Added icon URL to entrances and switched to raw.githubusercontent.com CDN.
     v1.1.0: Fixed TZ env type (int → string), reduced livenessProbe initialDelay from 30min to 5min, added resource limits to initContainer, cleaned up Dockerfile dependencies.
@@ -109,7 +106,7 @@ envs:
     options:
       - title: CPU (recommended)
         value: "CPU"
-      - title: GPU (requires compatible driver)
+      - title: iGPU (requires compatible driver)
         value: "GPU"
   - envName: PERFORMANCE_HINT
     required: false
@@ -130,13 +127,6 @@ envs:
     editable: true
     applyOnChange: true
     description: "Number of parallel inference streams (optimal for CPU: 2)"
-  - envName: HF_MODEL_ID
-    required: false
-    default: "Qwen/Qwen3-Embedding-4B"
-    type: string
-    editable: true
-    applyOnChange: true
-    description: "HuggingFace model ID for the embedding model"
   - envName: MODEL_NAME
     required: false
     default: "aimighty-embedding-4b"
@@ -144,31 +134,3 @@ envs:
     editable: true
     applyOnChange: true
     description: "Model name exposed in the OpenAI-compatible API"
-  - envName: PORT
-    required: false
-    default: "9997"
-    type: int
-    editable: true
-    applyOnChange: true
-    description: "HTTP port for the embedding API"
-  - envName: MODEL_CACHE_DIR
-    required: false
-    default: "/models_cache"
-    type: string
-    editable: true
-    applyOnChange: true
-    description: "Directory for cached model files"
-  - envName: OV_CACHE_DIR
-    required: false
-    default: "/tmp/ov_cache"
-    type: string
-    editable: true
-    applyOnChange: true
-    description: "Directory for OpenVINO runtime cache"
-  - envName: TZ
-    required: false
-    default: "Etc/UTC"
-    type: string
-    editable: true
-    applyOnChange: true
-    description: "Timezone for pod logs"
