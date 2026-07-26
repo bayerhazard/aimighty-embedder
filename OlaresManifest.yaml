@@ -12,7 +12,7 @@ metadata:
   description: Qwen3-Embedding-4B INT8 via OpenVINO
   appid: aimembqwen3vino
   title: Qwen3 Embedding
-  version: '1.7.0'
+  version: '1.7.1'
   categories:
     - AI
 entrances:
@@ -24,7 +24,7 @@ entrances:
     openMethod: window
     authLevel: internal
 spec:
-  versionName: '1.7.0'
+  versionName: '1.7.1'
   upgradeDescription: |
     v1.7.0: accelerator: [{mode: cpu}] im OlaresManifest ergänzt (app-service v3 AutoSelectMode: ohne accelerator-Deklaration → "No matching GPU type" 400, da ComputeResourceModes leer). CPU-Apps müssen den Modus explizit deklarieren.
     v1.6.9: deployment.replicas auf .Values.workloads.aimembqwen3vino.replicaCount (v3-Validation).
@@ -77,8 +77,6 @@ spec:
     - en-US
   supportArch:
     - amd64
-  accelerator:
-    - mode: cpu
   limitedCpu: 4
   requiredCpu: 2
   requiredMemory: 24Gi
