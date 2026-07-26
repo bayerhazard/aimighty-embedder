@@ -4,6 +4,10 @@ image:
   pullPolicy: Always
 replicaCount: 1
 revisionHistoryLimit: 3
+
+workloads:
+  aimembqwen3vino:
+    replicaCount: 1
 containerPort: 9997
 strategy:
   type: RollingUpdate

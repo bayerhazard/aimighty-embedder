@@ -9,7 +9,7 @@ metadata:
     applications.app.bytetrade.io/owner: {{ .Release.Namespace | trimSuffix "-aimighty" }}
     io.kompose.service: aimembqwen3vino
 spec:
-  replicas: {{ if or (eq (.Values.olaresEnv.EMBEDDER_MODE | default "cluster") "cluster") (eq .Values.olaresEnv.EMBEDDER_MODE "Cluster_Mode") }}2{{ else }}1{{ end }}
+  replicas: {{ .Values.workloads.aimembqwen3vino.replicaCount }}
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
   selector:
     matchLabels:
