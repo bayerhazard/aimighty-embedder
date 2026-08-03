@@ -32,6 +32,44 @@ spec:
         io.bytetrade.app: "true"
         io.kompose.service: aimembqwen3vino
     spec:
+      initContainers:
+      # check-auth must not wait on authelia (HTTP 400 -> CrashLoop). command:["true"]
+      # makes the webhook-injected wait-for harmless even when it overwrites args.
+      - name: check-auth
+        image: beclab/wait-for:0.1.0
+        imagePullPolicy: IfNotPresent
+        command: ["true"]
+        args: ["-it", "authelia-backend.user-system-aimighty:9091"]
+      - name: render-envoy-config
+        image: beclab/busybox:1.28
+        imagePullPolicy: IfNotPresent
+        command:
+        - /bin/sh
+        - -c
+        - |
+          while [ ! -f /var/run/secrets/kubernetes.io/serviceaccount/token ]; do sleep 0.2; done
+          TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+          awk -v token="$TOKEN" '{gsub(/__SA_TOKEN__/, token); print}' /work/envoy.yaml > /config/envoy.yaml
+          awk -v token="$TOKEN" '{gsub(/__SA_TOKEN__/, token); print}' /work/envoy2.yaml > /config/envoy2.yaml
+          cat /config/envoy2.yaml
+        volumeMounts:
+        - mountPath: /config
+          name: envoy-config
+        - mountPath: /work/envoy.yaml
+          name: olares-sidecar-config
+          subPath: envoy.yaml
+        - mountPath: /work/envoy2.yaml
+          name: olares-sidecar-config
+          subPath: envoy2.yaml
+      - name: olares-sidecar-init
+        image: beclab/init:v1.2.3
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/sh"]
+        resources:
+          limits:
+            nvidia.com/gpu: "0"
+          requests:
+            nvidia.com/gpu: "0"
       {{- if or (eq (.Values.olaresEnv.EMBEDDER_MODE | default "cluster") "cluster") (eq .Values.olaresEnv.EMBEDDER_MODE "Cluster_Mode") }}
       # cluster mode: spread pods across both nodes
       affinity:
@@ -79,6 +117,65 @@ spec:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
           startupProbe:
             {{- toYaml .Values.startupProbe | nindent 12 }}
+        - name: olares-envoy-sidecar
+          image: beclab/envoy:v1.25.11.1
+          imagePullPolicy: IfNotPresent
+          args: ["--log-level", "debug", "-c", "/config/envoy.yaml", "--service-cluster", "default."]
+          env:
+          - name: POD_UID
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.uid
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: status.podIP
+          - name: SERVICE_ACCOUNT
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: spec.serviceAccountName
+          - name: APP_KEY
+          - name: APP_SECRET
+          ports:
+          - name: proxy-admin
+            containerPort: 15000
+            protocol: TCP
+          - name: proxy-inbound
+            containerPort: 15003
+            protocol: TCP
+          - name: proxy-outbound
+            containerPort: 15001
+            protocol: TCP
+          - name: liveness-port
+            containerPort: 15008
+            protocol: TCP
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              add: ["NET_ADMIN"]
+            runAsUser: 1555
+          volumeMounts:
+          - mountPath: /config
+            name: envoy-config
       volumes:
         - name: app-envoy-config
           emptyDir: {}
+        - name: envoy-config
+          emptyDir: {}
+        - name: olares-sidecar-config
+          configMap:
+            name: olares-sidecar-config-{{ include "aimembqwen3vino.fullname" . }}
+            defaultMode: 420
