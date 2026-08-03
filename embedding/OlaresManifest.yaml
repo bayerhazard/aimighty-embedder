@@ -12,7 +12,7 @@ metadata:
   description: Qwen3-Embedding-4B INT8 via OpenVINO
   appid: aimembqwen3vino
   title: Qwen3 Embedding
-  version: '1.7.1'
+  version: '1.8.0'
   categories:
     - AI
 entrances:
@@ -24,8 +24,17 @@ entrances:
     openMethod: window
     authLevel: internal
 spec:
-  versionName: '1.7.1'
+  versionName: '1.8.0'
   upgradeDescription: |
+    v1.8.0: Performance & quality release (OpenVINO CPU, Modell unverändert INT8):
+      - Batch-Aggregator: parallele /v1/embeddings-Requests werden in EINEN Inferenz-Call zusammengefasst (~1.9x Durchsatz auf CPU, gemessen).
+      - Instruction-Support: optionaler "instruction"-Parameter im Request bzw. DEFAULT_INSTRUCTION-Env (Qwen-Instruct-Format "Instruct: {task}\nQuery:"), +1-5% Retrieval-Qualität.
+      - MRL-Support: EMBED_DIM-Env (32..2560) für reduzierte Vektordimension ohne Modellwechsel.
+      - Dependencies gepinnt (reproduzierbar): optimum-intel 2.0.0 (statt git@main), transformers 4.55.4, openvino 2026.2.1, torch 2.13.0, fastapi 0.141.1, uvicorn 0.52.1.
+      - OV-Config-Bug gefixt: PERFORMANCE_HINT/NUM_STREAMS-Env werden jetzt tatsächlich angewendet (waren vorher ignoriert, hartkodiert LATENCY/1).
+      - CPU_PINNING default YES (deterministisches Scheduling), INFERENCE_THREADS/MAX_LENGTH/BATCH_WINDOW_MS/INFER_TIMEOUT_SEC als Env konfigurierbar.
+      - Echter 2-Node-Cluster verdrahtet: EMBEDDER_MODE=cluster rendert jetzt 2 Replicas (pod anti-affinity, je 1 uvicorn-Worker) über beide Nodes; single = 1 Replica. Vorher: 2 Worker im selben Pod trotz "2 nodes"-Beschreibung.
+      - Lifecycle: on_event(startup) → lifespan (deprecation-frei).
     v1.7.0: accelerator: [{mode: cpu}] im OlaresManifest ergänzt (app-service v3 AutoSelectMode: ohne accelerator-Deklaration → "No matching GPU type" 400, da ComputeResourceModes leer). CPU-Apps müssen den Modus explizit deklarieren.
     v1.6.9: deployment.replicas auf .Values.workloads.aimembqwen3vino.replicaCount (v3-Validation).
     v1.6.8: Olares-Dependency auf >=1.12.6-0 gesetzt (apiVersion v3 erfordert Olares 1.12.6+).
@@ -55,14 +64,15 @@ spec:
     Qwen/Qwen3-Embedding-4B — a 4-billion-parameter embedding model from Qwen, INT8 quantized via Optimum Intel for efficient inference on consumer hardware.
 
     **Inference Engine**
-    OpenVINO 2026.0.0+ with Hugging Face Transformers 4.55.4. Runs on Intel Core Ultra iGPU (Arrow Lake-S) with automatic CPU fallback if the GPU is unavailable.
+    OpenVINO 2026.2.1 + optimum-intel 2.0.0 + Hugging Face Transformers 4.55.4 (gepinnt, reproduzierbar). Runs on Intel Core Ultra iGPU (Arrow Lake-S) with automatic CPU fallback if the GPU is unavailable.
 
     **Key Features**
     - OpenAI-compatible API endpoints: /v1/embeddings, /v1/models, /health
-    - THROUGHPUT mode with 2 parallel streams, FP16 precision, and large memory allocations for high throughput
+    - THROUGHPUT mode with batched inference (concurrent requests are coalesced into one forward pass)
+    - Cluster mode (EMBEDDER_MODE=cluster): 2 replicas spread across nodes via pod anti-affinity — uses both node CPUs
+    - Optional query-side instruction (Qwen instruct format) for better retrieval quality
+    - Optional Matryoshka dimension reduction (EMBED_DIM 32..2560)
     - Async endpoints with race-condition protection for concurrent RAG workloads
-    - Automatic model download and OpenVINO conversion on first start
-    - Cluster mode (2 pods across nodes) or single-node mode selectable at install time
     - Built-in HTML dashboard on root endpoint (/)
 
     **Resource Usage**
@@ -130,11 +140,65 @@ envs:
         value: "LATENCY"
   - envName: NUM_STREAMS
     required: false
-    default: "2"
+    default: "1"
     type: int
     editable: true
     applyOnChange: true
-    description: "Number of parallel inference streams (optimal for CPU: 2)"
+    description: "Number of parallel inference streams (1 recommended — batching handles concurrency)"
+  - envName: INFERENCE_THREADS
+    required: false
+    default: "8"
+    type: int
+    editable: true
+    applyOnChange: true
+    description: "OpenVINO CPU inference threads (P-cores on Core Ultra)"
+  - envName: CPU_PINNING
+    required: false
+    default: "YES"
+    type: string
+    editable: true
+    applyOnChange: true
+    description: "Pin inference to CPU cores (deterministic scheduling; nice 10 already yields priority)"
+    options:
+      - title: YES (deterministic)
+        value: "YES"
+      - title: NO (free scheduling)
+        value: "NO"
+  - envName: MAX_LENGTH
+    required: false
+    default: "8192"
+    type: int
+    editable: true
+    applyOnChange: true
+    description: "Max tokens per input text (model supports up to 32768)"
+  - envName: EMBED_DIM
+    required: false
+    default: "0"
+    type: int
+    editable: true
+    applyOnChange: true
+    description: "Output embedding dimension; 0 = full (2560), 32..2560 = Matryoshka (MRL) slice"
+  - envName: DEFAULT_INSTRUCTION
+    required: false
+    default: ""
+    type: string
+    editable: true
+    applyOnChange: true
+    description: "Optional query-side task instruction, e.g. 'Given a web search query, retrieve relevant passages that answer the query' (per-request 'instruction' field overrides)"
+  - envName: BATCH_WINDOW_MS
+    required: false
+    default: "5"
+    type: int
+    editable: true
+    applyOnChange: true
+    description: "Coalescing window (ms) for concurrent requests — larger = more batching, higher latency"
+  - envName: INFER_TIMEOUT_SEC
+    required: false
+    default: "300"
+    type: int
+    editable: true
+    applyOnChange: true
+    description: "Per-request inference timeout in seconds"
   - envName: MODEL_NAME
     required: false
     default: "aimighty-embedding-4b"

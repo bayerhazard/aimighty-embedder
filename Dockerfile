@@ -1,15 +1,13 @@
 FROM python:3.11-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    git && \
-    pip install --no-cache-dir \
-        openvino>=2026.0.0 \
-        "optimum-intel[openvino] @ git+https://github.com/huggingface/optimum-intel.git@main" \
+RUN pip install --no-cache-dir \
+        openvino==2026.2.1 \
+        "optimum-intel==2.0.0" \
         transformers==4.55.4 \
-        fastapi uvicorn[standard] torch>=2.4.0 tokenizers>=0.21 sentencepiece && \
-    apt-get remove -y git && \
-    apt-get autoremove -y && \
-    rm -rf /var/lib/apt/lists/*
+        torch==2.13.0 \
+        fastapi==0.141.1 \
+        "uvicorn[standard]==0.52.1" \
+        tokenizers>=0.21 sentencepiece
 
 
 

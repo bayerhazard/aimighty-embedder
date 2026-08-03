@@ -1,10 +1,11 @@
 import sys, os
 sys.path.insert(0, "/pypackages")
 import time, logging, asyncio, threading, ctypes
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse, HTMLResponse
 from pydantic import BaseModel
-from typing import List, Union
+from typing import List, Optional, Union
 import uvicorn
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -57,26 +58,43 @@ MODEL_NAME = os.getenv("MODEL_NAME", "aimighty-embedding-4b")
 PORT       = int(os.getenv("PORT", "9997"))
 
 OV_DEVICE = os.getenv("OV_DEVICE", "CPU")
-OV_PERFORMANCE_HINT = os.getenv("PERFORMANCE_HINT", "LATENCY")
+OV_PERFORMANCE_HINT = os.getenv("PERFORMANCE_HINT", "THROUGHPUT")
 OV_NUM_STREAMS = os.getenv("NUM_STREAMS", "1")
-CPU_PINNING = os.getenv("CPU_PINNING", "NO")  # Default to NO for cooperative resource sharing
+INFERENCE_THREADS = os.getenv("INFERENCE_THREADS", "8")
+CPU_PINNING = os.getenv("CPU_PINNING", "YES")  # deterministic scheduling; nice(10) already yields priority
+MAX_LENGTH = int(os.getenv("MAX_LENGTH", "8192"))
+EMBED_DIM = int(os.getenv("EMBED_DIM", "0"))  # 0 = full dim (2560); 32..2560 = Matryoshka (MRL) slice
+DEFAULT_INSTRUCTION = os.getenv("DEFAULT_INSTRUCTION", "")  # e.g. "Given a web search query, retrieve relevant passages that answer the query"
+BATCH_WINDOW = float(os.getenv("BATCH_WINDOW_MS", "5")) / 1000.0  # coalescing window for concurrent requests
+INFER_TIMEOUT = float(os.getenv("INFER_TIMEOUT_SEC", "300"))
 
 def _build_ov_config(device):
     cfg = {
-        "PERFORMANCE_HINT": "LATENCY",
-        "NUM_STREAMS": "1",
+        "PERFORMANCE_HINT": OV_PERFORMANCE_HINT,
+        "NUM_STREAMS": OV_NUM_STREAMS,
     }
     if device.upper() == "CPU":
-        cfg["INFERENCE_NUM_THREADS"] = "8"
+        cfg["INFERENCE_NUM_THREADS"] = INFERENCE_THREADS
         cfg["SCHEDULING_CORE_TYPE"] = "PCORE_ONLY"
         cfg["ENABLE_CPU_PINNING"] = "YES" if CPU_PINNING.upper() == "YES" else "NO"
     return cfg
 
-app = FastAPI()
 _model = None
 _tokenizer = None
 _infer_lock = threading.Lock()
 _model_ready = False
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    log.info("FastAPI startup: warming up model...")
+    try:
+        _run_inference(["warmup"])
+        log.info("Warmup inference complete. Model ready.")
+    except Exception as e:
+        log.exception("Model warmup failed: %s", e)
+    yield
+
+app = FastAPI(lifespan=lifespan)
 try:
     _libc = ctypes.CDLL("libc.so.6", mode=ctypes.RTLD_GLOBAL)
 except (AttributeError, OSError):
@@ -139,6 +157,7 @@ def get_model():
 class EmbReq(BaseModel):
     input: Union[str, List[str]]
     model: str = MODEL_NAME
+    instruction: Optional[str] = None  # optional query-side task instruction (Qwen3 instruct format)
 
 @app.get("/", response_class=HTMLResponse)
 def root():
@@ -200,7 +219,7 @@ def root():
     <div class="meta-item"><div class="meta-label">Model</div><div class="meta-value">{MODEL_NAME}</div></div>
     <div class="meta-item"><div class="meta-label">Device</div><div class="meta-value">{device}</div></div>
     <div class="meta-item"><div class="meta-label">Mode</div><div class="meta-value">{mode_label}</div></div>
-    <div class="meta-item"><div class="meta-label">Max tokens</div><div class="meta-value">8192</div></div>
+    <div class="meta-item"><div class="meta-label">Max tokens</div><div class="meta-value">{MAX_LENGTH}</div></div>
   </div>
   <h2>API Endpoints</h2>
   <div class="endpoints">
@@ -241,46 +260,125 @@ def models():
     }
 
 def _run_inference(texts):
-    """Synchronous inference — runs in a worker thread to keep the event loop free."""
+    """Synchronous inference — runs in a worker thread to keep the event loop free.
+    Returns (vectors, per-item token counts)."""
     import torch
 
     with _infer_lock:
         model, tok = get_model()
         log.info("Embedding %d text(s)", len(texts))
 
-        enc = tok(texts, padding=True, truncation=True, max_length=8192, return_tensors="pt")
+        enc = tok(texts, padding=True, truncation=True, max_length=MAX_LENGTH, return_tensors="pt")
 
         with torch.no_grad():
             out = model(**enc)
 
-        # Qwen3-Embedding requires LAST TOKEN pooling
+        # Qwen3-Embedding requires LAST TOKEN pooling (padding_side="left" -> real last token)
         last_hidden = out[0]
-        attention_mask = enc["attention_mask"]
         pooled = last_hidden[:, -1]
+        # Optional Matryoshka (MRL) truncation: model supports any dim 32..2560
+        if EMBED_DIM and 0 < EMBED_DIM < pooled.shape[1]:
+            pooled = pooled[:, :EMBED_DIM]
         pooled = torch.nn.functional.normalize(pooled, p=2, dim=1)
         vecs = pooled.tolist()
-        total = int(enc["input_ids"].numel())
+        # per-item token counts from attention mask (excludes padding)
+        counts = [int(c) for c in enc["attention_mask"].sum(dim=1).tolist()]
 
     try:
         _libc.malloc_trim(0)
     except (AttributeError, OSError):
         pass
-    return vecs, total
+    return vecs, counts
+
+class _BatchAggregator:
+    """Coalesce concurrent /v1/embeddings requests into a single inference call.
+
+    Requests arriving within BATCH_WINDOW are grouped into one batched forward
+    pass, which is far more efficient on CPU (memory-bound) than per-request calls.
+    """
+
+    def __init__(self, window: float):
+        self._window = window
+        self._lock = asyncio.Lock()
+        self._pending: list = []  # [(texts: list[str], future)]
+        self._task: Optional[asyncio.Task] = None
+
+    async def submit(self, texts: List[str]):
+        loop = asyncio.get_running_loop()
+        fut = loop.create_future()
+        async with self._lock:
+            self._pending.append((texts, fut))
+            if self._task is None or self._task.done():
+                self._task = asyncio.create_task(self._drain())
+        return await asyncio.wait_for(fut, timeout=INFER_TIMEOUT)
+
+    async def _drain(self):
+        try:
+            while True:
+                await asyncio.sleep(self._window)
+                async with self._lock:
+                    batch = self._pending
+                    self._pending = []
+                    if not batch:
+                        self._task = None
+                        return
+                await self._run_batch(batch)
+        except asyncio.CancelledError:
+            async with self._lock:
+                pending = self._pending
+                self._pending = []
+            for _, fut in pending:
+                if not fut.done():
+                    fut.cancel()
+
+    async def _run_batch(self, batch):
+        flat: List[str] = []
+        spans = []
+        for texts, _ in batch:
+            start = len(flat)
+            flat.extend(texts)
+            spans.append((start, len(flat)))
+        try:
+            vecs, counts = await asyncio.to_thread(_run_inference, flat)
+        except Exception as e:
+            log.exception("Batch inference failed for %d request(s)", len(batch))
+            for _, fut in batch:
+                if not fut.done():
+                    fut.set_exception(e)
+            return
+        for (start, end), (_, fut) in zip(spans, batch):
+            if fut.done():
+                continue
+            fut.set_result((vecs[start:end], sum(counts[start:end])))
+
+aggregator = _BatchAggregator(BATCH_WINDOW)
+
+def _apply_instruction(texts, instruction):
+    """Qwen3 query-side instruct prefix (docs should be sent without instruction)."""
+    if not instruction:
+        return texts
+    prefix = f"Instruct: {instruction}\nQuery:"
+    return [prefix + t for t in texts]
 
 @app.post("/v1/embeddings")
 async def embed(req: EmbReq):
     texts = [req.input] if isinstance(req.input, str) else req.input
+    instruction = req.instruction if req.instruction is not None else DEFAULT_INSTRUCTION
+    texts = _apply_instruction(texts, instruction)
 
     try:
-        vecs, total = await asyncio.wait_for(
-            asyncio.to_thread(_run_inference, texts),
-            timeout=300.0,
-        )
+        vecs, total = await aggregator.submit(texts)
     except asyncio.TimeoutError:
-        log.error("Inference timeout after 300s for %d text(s)", len(texts))
+        log.error("Inference timeout after %gs for %d text(s)", INFER_TIMEOUT, len(texts))
         return JSONResponse(
             status_code=504,
-            content={"error": "inference timeout", "detail": "Request exceeded 300s limit"},
+            content={"error": "inference timeout", "detail": f"Request exceeded {INFER_TIMEOUT:g}s limit"},
+        )
+    except Exception as e:
+        log.exception("Inference failed for %d text(s)", len(texts))
+        return JSONResponse(
+            status_code=500,
+            content={"error": "inference failed", "detail": str(e)},
         )
 
     return {
@@ -293,23 +391,11 @@ async def embed(req: EmbReq):
         "usage": {"prompt_tokens": total, "total_tokens": total}
     }
 
-@app.on_event("startup")
-def startup_event():
-    log.info("FastAPI startup: warming up model...")
-    try:
-        model, tok = get_model()
-        import torch
-        enc = tok(["warmup"], padding=True, truncation=True, return_tensors="pt")
-        with _infer_lock:
-            with torch.no_grad():
-                model(**enc)
-        log.info("Warmup inference complete. Model ready.")
-    except Exception as e:
-        log.exception("Model warmup failed: %s", e)
-
 if __name__ == "__main__":
+    # One worker per pod: multi-node parallelism is handled at the replica level
+    # (EMBEDDER_MODE=cluster -> 2 pods, one per node). Raise UVICORN_WORKERS only
+    # if you want additional in-process workers.
+    num_workers = int(os.getenv("UVICORN_WORKERS", "1"))
     mode = os.getenv("EMBEDDER_MODE", "Single_Node")
-    is_cluster = "cluster" in mode.lower()
-    num_workers = 2 if is_cluster else 1
     log.info("Starting uvicorn with %d worker(s) in %s mode", num_workers, mode)
     uvicorn.run("server:app", host="0.0.0.0", port=PORT, workers=num_workers)

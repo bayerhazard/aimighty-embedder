@@ -9,7 +9,9 @@ metadata:
     applications.app.bytetrade.io/owner: {{ .Release.Namespace | trimSuffix "-aimighty" }}
     io.kompose.service: aimembqwen3vino
 spec:
-  replicas: {{ .Values.workloads.aimembqwen3vino.replicaCount }}
+  # cluster mode -> 2 replicas spread across nodes (1 worker each),
+  # single mode -> .Values.workloads.aimembqwen3vino.replicaCount (1)
+  replicas: {{ if eq (default "cluster" .Values.olaresEnv.EMBEDDER_MODE) "cluster" }}{{ mul .Values.workloads.aimembqwen3vino.replicaCount 2 | int }}{{ else }}{{ .Values.workloads.aimembqwen3vino.replicaCount }}{{ end }}
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
   selector:
     matchLabels:
