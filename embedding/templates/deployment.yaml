@@ -6,7 +6,6 @@ metadata:
   labels:
     app: aimembqwen3vino
     applications.app.bytetrade.io/name: aimembqwen3vino
-    applications.app.bytetrade.io/owner: {{ .Release.Namespace | trimSuffix "-aimighty" }}
     io.kompose.service: aimembqwen3vino
 spec:
   # cluster mode -> 2 replicas spread across nodes (1 worker each),
@@ -28,7 +27,7 @@ spec:
       labels:
         app: aimembqwen3vino
         applications.app.bytetrade.io/name: aimembqwen3vino
-        applications.app.bytetrade.io/owner: {{ .Release.Namespace | trimSuffix "-aimighty" }}
+        applications.app.bytetrade.io/raw-app-name: aimembqwen3vino
         io.bytetrade.app: "true"
         io.kompose.service: aimembqwen3vino
     spec:
