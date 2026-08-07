@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIM Qwen3 Embedding — Dashboard</title>
+<style>
+/* ============================================================
+   AIM Qwen3-Embedding Dashboard
+   Design-Sprache: Rewind (Hanseatenblau + Gold-Akzent)
+   ============================================================ */
+:root{
+  /* Surface-Scale (Navy) */
+  --b-25:#000714; --b-50:#010e1d; --b-100:#041120; --b-150:#081a2e;
+  --b-200:#10243c; --b-300:#1d3a5c; --b-400:#2f5178;
+  --b-500:#4a6c95; --b-600:#708bab; --b-700:#9bafc6;
+  --b-800:#c6d2e0; --b-900:#e6ebf1;
+
+  /* Signal — ein Akzent (AImighty-Gold) */
+  --gold:#c9a45c; --gold-hell:#d5b371; --gold-tief:#b28b42;
+  --marke:var(--gold); --marke-hell:var(--gold-hell); --marke-tief:var(--gold-tief);
+  --auf-marke:var(--b-25);
+
+  --bg:var(--b-50);
+  --surface:var(--b-100);
+  --surface2:var(--b-150);
+  --border:var(--b-300);
+  --border-soft:var(--b-200);
+  --text:var(--b-800);
+  --text-stark:#fff;
+  --text-dim:var(--b-500);
+  --accent:var(--marke);
+  --accent-hover:var(--marke-hell);
+
+  --success:#4ade80; --success-bg:color-mix(in oklab, #4ade80 12%, transparent);
+  --warning:#fbbf24; --warning-bg:color-mix(in oklab, #fbbf24 12%, transparent);
+  --error:#f87171;  --error-bg:color-mix(in oklab, #f87171 12%, transparent);
+  --info-bg:color-mix(in oklab, var(--marke) 12%, transparent);
+
+  --marke-flaeche:color-mix(in oklab, var(--marke) 12%, transparent);
+  --marke-rand:color-mix(in oklab, var(--marke) 44%, transparent);
+
+  --fokus:var(--marke-hell);
+
+  --schrift:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,'SF Mono','Fira Code',Menlo,Consolas,monospace;
+
+  --radius:8px;
+  --seite:clamp(1rem, 3.5vw, 2.5rem);
+  --inhalt:60rem;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+body{
+  font-family:var(--schrift);
+  background:
+    radial-gradient(1200px 600px at 80% -10%, color-mix(in oklab, var(--marke) 9%, transparent), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, color-mix(in oklab, var(--marke) 5%, transparent), transparent 55%),
+    var(--bg);
+  color:var(--text);
+  line-height:1.6;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+:focus-visible{outline:2px solid var(--fokus);outline-offset:2px;border-radius:4px}
+
+.container{width:min(100% - var(--seite)*2, var(--inhalt));margin-inline:auto;padding-block:24px}
+
+/* Mikro-Label (Kicker-Pattern) */
+.kicker{
+  display:inline-flex;align-items:center;gap:.55rem;
+  font-family:var(--mono);font-size:.68rem;font-weight:600;
+  letter-spacing:.18em;text-transform:uppercase;
+  color:var(--marke);margin-bottom:1.1rem;
+}
+.kicker::before{content:"";inline-size:1.4rem;block-size:1px;background:var(--marke-rand);display:block}
+
+/* Kopfzeile */
+.header{
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  margin-bottom:1.75rem;padding-block:.25rem 1rem;
+  border-bottom:1px solid var(--border-soft);
+}
+.header h1{
+  font-size:clamp(1.4rem, 1.1rem + 1vw, 1.7rem);
+  font-weight:700;letter-spacing:-.02em;color:var(--text-stark);line-height:1.1;
+}
+.header h1::first-letter{color:var(--marke)}
+.header .subtitle{font-size:.82rem;color:var(--text-dim);margin-top:.15rem}
+
+/* Sprachumschalter */
+.lang-toggle{
+  display:inline-flex;gap:2px;background:var(--surface);border:1px solid var(--border-soft);
+  border-radius:6px;padding:2px;flex-shrink:0;
+}
+.lang-toggle button{
+  border:none;background:transparent;color:var(--text-dim);
+  font-family:var(--mono);font-size:.68rem;font-weight:600;letter-spacing:.1em;
+  padding:.3rem .6rem;border-radius:4px;cursor:pointer;transition:all .16s ease;
+}
+.lang-toggle button:hover{color:var(--text-stark)}
+.lang-toggle button.active{background:var(--marke);color:var(--auf-marke)}
+
+/* Karten */
+.card{
+  background:linear-gradient(180deg, var(--surface), var(--b-100));
+  border:1px solid var(--border-soft);
+  border-radius:var(--radius);
+  padding:1.1rem 1.2rem;
+  margin-bottom:16px;
+}
+.card-title{
+  font-size:.95rem;font-weight:600;color:var(--text-stark);
+  margin-bottom:14px;display:flex;align-items:center;gap:8px;
+}
+.card-title .icon{font-size:1.05rem;color:var(--marke)}
+
+/* Badge */
+.badge{
+  display:inline-flex;align-items:center;gap:.5rem;
+  padding:.35rem .8rem;border-radius:999px;font-size:.78rem;font-weight:600;
+  background:var(--warning-bg);border:1px solid color-mix(in oklab, var(--warning) 40%, transparent);color:var(--warning);
+}
+.badge.ready{background:var(--success-bg);border-color:color-mix(in oklab, var(--success) 40%, transparent);color:var(--success)}
+.badge.offline{background:var(--error-bg);border-color:color-mix(in oklab, var(--error) 40%, transparent);color:var(--error)}
+.dot{width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor}
+
+/* Meta-Grid */
+.meta{display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:.75rem}
+.meta-item{background:var(--b-25);border:1px solid var(--border-soft);border-radius:6px;padding:.7rem .8rem}
+.meta-item .k{
+  font-size:.64rem;color:var(--text-dim);text-transform:uppercase;
+  letter-spacing:.14em;font-family:var(--mono);font-weight:600;margin-bottom:.25rem;
+}
+.meta-item .v{font-size:.9rem;color:var(--text-stark);font-weight:600;font-family:var(--mono)}
+.meta-item .v.dim{color:var(--text-dim)}
+
+/* Textarea + Controls */
+textarea{
+  width:100%;min-height:100px;padding:.7rem .85rem;border-radius:6px;
+  border:1px solid var(--border);background:var(--surface2);color:var(--text);
+  font-family:var(--schrift);font-size:.9rem;line-height:1.6;resize:vertical;outline:none;
+}
+textarea:focus{border-color:var(--marke)}
+textarea::placeholder{color:var(--text-dim)}
+.controls{display:flex;gap:.75rem;margin-top:.85rem;align-items:center}
+select{
+  flex:1;padding:.55rem .7rem;border-radius:6px;
+  border:1px solid var(--border);background:var(--surface2);color:var(--text);
+  font-size:.9rem;outline:none;cursor:pointer;font-family:var(--schrift);
+}
+select:focus{border-color:var(--marke)}
+select option{background:var(--surface)}
+
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
+  block-size:2.5rem;padding-inline:1.1rem;
+  border:1px solid var(--border);border-radius:6px;
+  background:var(--surface2);color:var(--text);
+  font-family:var(--schrift);font-size:.85rem;font-weight:600;line-height:1;
+  white-space:nowrap;cursor:pointer;user-select:none;
+  transition:background-color .16s ease,border-color .16s ease,color .16s ease;
+}
+.btn:hover{border-color:var(--marke-rand);background:var(--marke-flaeche);color:var(--text-stark)}
+.btn.primary{background:var(--marke);border-color:var(--marke);color:var(--auf-marke)}
+.btn.primary:hover{background:var(--marke-hell);border-color:var(--marke-hell)}
+.btn:disabled{opacity:.5;cursor:not-allowed;pointer-events:none}
+
+/* Endpoints */
+.endpoints{display:grid;gap:.5rem}
+.endpoint{display:flex;align-items:center;gap:.75rem;padding:.6rem .8rem;background:var(--b-25);border:1px solid var(--border-soft);border-radius:6px;font-family:var(--mono);font-size:.8rem}
+.method{flex-shrink:0;font-weight:700;font-size:.62rem;padding:.15rem .45rem;border-radius:4px;letter-spacing:.06em}
+.method.POST{background:var(--marke-flaeche);color:var(--marke)}
+.method.GET{background:var(--info-bg);color:var(--text)}
+.path{color:var(--text);flex:1}
+.desc{color:var(--text-dim);font-size:.74rem;font-family:var(--schrift)}
+
+/* Code */
+pre{margin:.5rem 0 0;padding:.9rem 1rem;background:var(--b-25);border:1px solid var(--border-soft);border-radius:6px;font-family:var(--mono);font-size:.76rem;color:var(--text);overflow-x:auto;line-height:1.7}
+.kw{color:var(--marke)}.str{color:var(--success)}.num{color:var(--warning)}
+
+/* Status */
+.status{margin-top:1rem;font-size:.85rem;color:var(--text-dim);min-height:1.5rem;display:flex;align-items:center;gap:8px}
+.status.error{color:var(--error)}
+.status.success{color:var(--success)}
+.spinner{
+  display:inline-block;width:14px;height:14px;
+  border:2px solid var(--border);border-top-color:var(--marke);
+  border-radius:50%;animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Health + Footer */
+.foot{
+  margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border-soft);
+  display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;
+  font-size:.74rem;color:var(--text-dim);font-family:var(--mono);
+}
+.foot .health{display:inline-flex;align-items:center;gap:6px}
+.foot .health .ok{color:var(--success)}
+.foot .health .bad{color:var(--error)}
+.foot .cfg{display:flex;gap:14px;flex-wrap:wrap}
+.foot .cfg span{white-space:nowrap}
+.foot .cfg b{color:var(--text);font-weight:600}
+
+@media (max-width:600px){
+  .header{flex-direction:column;gap:12px;align-items:flex-start}
+  .controls{flex-wrap:wrap}
+  .controls select{flex:none;width:100%}
+  .btn{flex:1}
+}
+
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--text-dim)}
+
+.hidden{display:none !important}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation:none !important;transition:none !important}
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div>
+      <h1>Qwen3 Embedding</h1>
+      <div class="subtitle" data-i18n="subtitle">Qwen3-Embedding-4B via OpenVINO — OpenAI-kompatibel, INT8</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span class="badge __STATUS_CLASS__" id="statusBadge"><span class="dot"></span><span id="statusText">__STATUS_TEXT__</span></span>
+      <div class="lang-toggle" role="group" aria-label="Sprache">
+        <button type="button" id="langDE" class="active">DE</button>
+        <button type="button" id="langEN">EN</button>
+      </div>
+    </div>
+  </div>
+
+  <span class="kicker" data-i18n="kicker">Einbettungen</span>
+
+  <!-- Karte 1: Konfiguration -->
+  <div class="card">
+    <div class="card-title"><span class="icon">▤</span><span data-i18n="cfgTitle">Konfiguration</span></div>
+    <div class="meta">
+      <div class="meta-item"><div class="k" data-i18n="svcModel">Modell</div><div class="v">__MODEL__</div></div>
+      <div class="meta-item"><div class="k" data-i18n="svcDevice">Gerät</div><div class="v">__DEVICE__</div></div>
+      <div class="meta-item"><div class="k" data-i18n="svcMode">Modus</div><div class="v">__MODE__</div></div>
+      <div class="meta-item"><div class="k" data-i18n="svcCtx">Max. Tokens</div><div class="v">__MAXTOKENS__</div></div>
+    </div>
+  </div>
+
+  <!-- Karte 2: Embedding-Test -->
+  <div class="card">
+    <div class="card-title"><span class="icon">●</span><span data-i18n="testTitle">Embedding-Test</span></div>
+    <textarea id="textInput" data-i18n-ph="testPh" placeholder="Text zum Einbetten eingeben…">OpenVINO beschleunigt Embedding-Modelle auf Intel-Prozessoren.</textarea>
+    <div class="controls">
+      <select id="dimSelect" aria-label="Dimension">
+        <option value="0" data-i18n="dimFull">Volle Dimension (2560)</option>
+        <option value="512">512 (MRL)</option>
+        <option value="256">256 (MRL)</option>
+        <option value="128">128 (MRL)</option>
+      </select>
+      <button class="btn primary" id="embedBtn" data-i18n="embedBtn">Einbetten</button>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <!-- Karte 3: API-Endpoints -->
+  <div class="card">
+    <div class="card-title"><span class="icon">▦</span><span data-i18n="epTitle">API-Endpoints</span></div>
+    <div class="endpoints">
+      <div class="endpoint"><span class="method POST">POST</span><span class="path">/v1/embeddings</span><span class="desc" data-i18n="epEmbed">Einbettungen erzeugen (OpenAI-kompatibel)</span></div>
+      <div class="endpoint"><span class="method GET">GET</span><span class="path">/v1/models</span><span class="desc" data-i18n="epModels">Modelle auflisten</span></div>
+      <div class="endpoint"><span class="method GET">GET</span><span class="path">/health</span><span class="desc" data-i18n="epHealth">Liveness-Check</span></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="health" id="healthInfo"><span data-i18n="healthChecking">Status wird geprüft…</span></div>
+    <div class="cfg">
+      <span><b data-i18n="cfgModel">Modell</b>: __MODEL__</span>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== i18n DE/EN ===== */
+const I18N = {
+  de: {
+    subtitle: 'Qwen3-Embedding-4B via OpenVINO — OpenAI-kompatibel, INT8',
+    kicker: 'Einbettungen',
+    cfgTitle: 'Konfiguration',
+    svcModel: 'Modell',
+    svcDevice: 'Gerät',
+    svcMode: 'Modus',
+    svcCtx: 'Max. Tokens',
+    testTitle: 'Embedding-Test',
+    testPh: 'Text zum Einbetten eingeben…',
+    dimFull: 'Volle Dimension (2560)',
+    embedBtn: 'Einbetten',
+    epTitle: 'API-Endpoints',
+    epEmbed: 'Einbettungen erzeugen (OpenAI-kompatibel)',
+    epModels: 'Modelle auflisten',
+    epHealth: 'Liveness-Check',
+    healthChecking: 'Status wird geprüft…',
+    healthOk: 'Bereit',
+    healthBad: 'Nicht erreichbar',
+    cfgModel: 'Modell',
+    ready: 'Bereit',
+    offline: 'Offline',
+    embedding: 'Berechne Einbettung…',
+    done: 'Fertig',
+    errNoText: 'Bitte zuerst Text eingeben.',
+    dims: 'Dimensionen',
+  },
+  en: {
+    subtitle: 'Qwen3-Embedding-4B via OpenVINO — OpenAI-compatible, INT8',
+    kicker: 'Embeddings',
+    cfgTitle: 'Configuration',
+    svcModel: 'Model',
+    svcDevice: 'Device',
+    svcMode: 'Mode',
+    svcCtx: 'Max tokens',
+    testTitle: 'Embedding Test',
+    testPh: 'Enter text to embed…',
+    dimFull: 'Full dimension (2560)',
+    embedBtn: 'Embed',
+    epTitle: 'API Endpoints',
+    epEmbed: 'Generate embeddings (OpenAI-compatible)',
+    epModels: 'List models',
+    epHealth: 'Liveness probe',
+    healthChecking: 'Checking status…',
+    healthOk: 'Ready',
+    healthBad: 'Unreachable',
+    cfgModel: 'Model',
+    ready: 'Ready',
+    offline: 'Offline',
+    embedding: 'Computing embedding…',
+    done: 'Done',
+    errNoText: 'Please enter some text first.',
+    dims: 'Dimensions',
+  }
+};
+
+let LANG = 'de';
+
+function applyLang() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (I18N[LANG][key]) el.textContent = I18N[LANG][key];
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    const key = el.getAttribute('data-i18n-ph');
+    if (I18N[LANG][key]) el.placeholder = I18N[LANG][key];
+  });
+  document.getElementById('langDE').classList.toggle('active', LANG === 'de');
+  document.getElementById('langEN').classList.toggle('active', LANG === 'en');
+  document.documentElement.lang = LANG === 'de' ? 'de' : 'en';
+}
+document.getElementById('langDE').addEventListener('click', () => { LANG = 'de'; applyLang(); });
+document.getElementById('langEN').addEventListener('click', () => { LANG = 'en'; applyLang(); });
+applyLang();
+
+/* ===== API-Basis ===== */
+const API_URL = window.location.origin + '/v1/embeddings';
+const MODEL = '__MODEL__';
+
+/* ===== Elemente ===== */
+const statusEl = document.getElementById('status');
+const statusBadge = document.getElementById('statusBadge');
+const statusText = document.getElementById('statusText');
+const embedBtn = document.getElementById('embedBtn');
+const textInput = document.getElementById('textInput');
+
+function setStatus(cls, msg) {
+  statusEl.className = 'status' + (cls ? ' ' + cls : '');
+  statusEl.textContent = msg;
+}
+function setLoading(msg) {
+  statusEl.className = 'status';
+  statusEl.innerHTML = '<span class="spinner"></span>' + msg;
+}
+
+/* ===== Health ===== */
+async function refresh() {
+  try {
+    const res = await fetch('/health');
+    const ok = res.ok;
+    if (ok) { statusBadge.className = 'badge ready'; statusText.textContent = I18N[LANG].ready; }
+    else { statusBadge.className = 'badge offline'; statusText.textContent = I18N[LANG].offline; }
+    document.getElementById('healthInfo').innerHTML =
+      '<span class="ok">●</span> <span>' + I18N[LANG].healthOk + '</span>';
+  } catch (e) {
+    statusBadge.className = 'badge offline';
+    statusText.textContent = I18N[LANG].offline;
+    document.getElementById('healthInfo').innerHTML =
+      '<span class="bad">●</span> <span>' + I18N[LANG].healthBad + '</span>';
+  }
+}
+
+/* ===== Embedding ===== */
+async function doEmbed() {
+  const text = textInput.value.trim();
+  if (!text) { setStatus('error', I18N[LANG].errNoText); return; }
+  embedBtn.disabled = true;
+  setLoading(I18N[LANG].embedding);
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: MODEL,
+        input: text,
+        dimensions: parseInt(document.getElementById('dimSelect').value) || undefined
+      })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || err.message || ('HTTP ' + res.status));
+    }
+    const data = await res.json();
+    const vec = data.data && data.data[0] && data.data[0].embedding;
+    setStatus('success', I18N[LANG].done + ' — ' + I18N[LANG].dims + ': ' + (vec ? vec.length : '?'));
+  } catch (e) {
+    setStatus('error', 'Error: ' + e.message);
+  } finally {
+    embedBtn.disabled = false;
+  }
+}
+
+embedBtn.addEventListener('click', doEmbed);
+
+refresh();
+setInterval(refresh, 15000);
+</script>
+</body>
+</html>

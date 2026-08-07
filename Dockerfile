@@ -22,6 +22,7 @@ RUN optimum-cli export openvino \
     rm -rf /root/.cache/huggingface
 
 COPY embedder-server.py /app/server.py
+COPY dashboard.html /app/dashboard.html
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 RUN mkdir -p /models_cache

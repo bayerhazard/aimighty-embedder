@@ -162,87 +162,32 @@ class EmbReq(BaseModel):
 @app.get("/", response_class=HTMLResponse)
 def root():
     """Browser landing page. API consumers use /v1/embeddings, /v1/models, /health."""
-    status_color = "#10b981" if _model_ready else "#f59e0b"
-    status_text = "Ready" if _model_ready else "Loading model..."
+    status_color = "ready" if _model_ready else "offline"
+    status_text = "Bereit" if _model_ready else "Modell wird geladen…"
     device = OV_DEVICE.upper()
     mode = os.getenv("EMBEDDER_MODE", "Single_Node")
     is_cluster = "cluster" in mode.lower()
-    mode_label = "Cluster Mode (2 Workers)" if is_cluster else "Single Node (1 Worker)"
-    html = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aimighty Embedder &mdash; {MODEL_NAME}</title>
-<link rel="icon" type="image/png" href="https://github.com/bayerhazard/aimighty-embedder/raw/main/icon.png">
-<style>
-  *,*::before,*::after{{box-sizing:border-box}}
-  html,body{{margin:0;padding:0}}
-  body{{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#0f172a 100%);color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem 1rem}}
-  .card{{width:100%;max-width:780px;background:rgba(15,23,42,.72);border:1px solid rgba(148,163,184,.15);border-radius:20px;padding:2.5rem;backdrop-filter:blur(20px);box-shadow:0 25px 50px -12px rgba(0,0,0,.5)}}
-  .header{{display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem}}
-  .icon{{width:64px;height:64px;border-radius:14px;background:#fff;padding:6px;flex-shrink:0}}
-  h1{{margin:0;font-size:1.75rem;font-weight:700;letter-spacing:-.02em}}
-  .subtitle{{margin:.25rem 0 0;color:#94a3b8;font-size:.95rem}}
-  .badge{{display:inline-flex;align-items:center;gap:.5rem;margin-top:.75rem;padding:.35rem .75rem;background:rgba(16,185,129,.12);border:1px solid {status_color}55;border-radius:999px;font-size:.8rem;font-weight:600;color:{status_color}}}
-  .dot{{width:8px;height:8px;border-radius:50%;background:{status_color};box-shadow:0 0 12px {status_color}}}
-  h2{{margin:2rem 0 .75rem;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#64748b}}
-  .endpoints{{display:grid;gap:.5rem}}
-  .endpoint{{display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;background:rgba(30,41,59,.5);border:1px solid rgba(148,163,184,.1);border-radius:10px;font-family:"SF Mono",Monaco,Consolas,monospace;font-size:.85rem}}
-  .method{{flex-shrink:0;font-weight:700;font-size:.7rem;padding:.2rem .5rem;border-radius:5px;letter-spacing:.05em}}
-  .method.GET{{background:rgba(59,130,246,.2);color:#60a5fa}}
-  .method.POST{{background:rgba(168,85,247,.2);color:#c084fc}}
-  .path{{color:#e2e8f0;flex:1}}
-  .desc{{color:#64748b;font-size:.8rem;font-family:-apple-system,sans-serif}}
-  pre{{margin:0;padding:1.25rem;background:#020617;border:1px solid rgba(148,163,184,.1);border-radius:10px;font-family:"SF Mono",Monaco,Consolas,monospace;font-size:.8rem;color:#cbd5e1;overflow-x:auto;line-height:1.6}}
-  .kw{{color:#f472b6}}.str{{color:#86efac}}.num{{color:#fbbf24}}
-  .meta{{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.75rem;margin-top:1rem}}
-  .meta-item{{padding:.85rem 1rem;background:rgba(30,41,59,.4);border:1px solid rgba(148,163,184,.1);border-radius:10px}}
-  .meta-label{{font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:#64748b;font-weight:700}}
-  .meta-value{{margin-top:.3rem;color:#e2e8f0;font-size:.95rem;font-weight:600;font-family:"SF Mono",Monaco,Consolas,monospace}}
-  footer{{margin-top:2rem;padding-top:1.25rem;border-top:1px solid rgba(148,163,184,.1);color:#64748b;font-size:.8rem;text-align:center}}
-  a{{color:#60a5fa;text-decoration:none;transition:color .15s}}
-  a:hover{{color:#93c5fd}}
-</style>
-</head>
-<body>
-<div class="card">
-  <div class="header">
-    <img class="icon" src="https://github.com/bayerhazard/aimighty-embedder" alt="Aimighty Embedder">
-    <div>
-      <h1>Aimighty Embedder (Optimized)</h1>
-      <p class="subtitle">OpenAI-compatible embedding API &middot; OpenVINO on Intel CPU/iGPU</p>
-      <span class="badge"><span class="dot"></span>{status_text}</span>
-    </div>
-  </div>
-  <div class="meta">
-    <div class="meta-item"><div class="meta-label">Model</div><div class="meta-value">{MODEL_NAME}</div></div>
-    <div class="meta-item"><div class="meta-label">Device</div><div class="meta-value">{device}</div></div>
-    <div class="meta-item"><div class="meta-label">Mode</div><div class="meta-value">{mode_label}</div></div>
-    <div class="meta-item"><div class="meta-label">Max tokens</div><div class="meta-value">{MAX_LENGTH}</div></div>
-  </div>
-  <h2>API Endpoints</h2>
-  <div class="endpoints">
-    <div class="endpoint"><span class="method POST">POST</span><span class="path">/v1/embeddings</span><span class="desc">Generate embeddings (OpenAI-compatible)</span></div>
-    <div class="endpoint"><span class="method GET">GET</span><span class="path">/v1/models</span><span class="desc">List available models</span></div>
-    <div class="endpoint"><span class="method GET">GET</span><span class="path">/health</span><span class="desc">Liveness probe</span></div>
-  </div>
-  <h2>Quick start</h2>
-  <pre><span class="kw">curl</span> -X POST <span class="str">"$ENDPOINT/v1/embeddings"</span> \\
-  -H <span class="str">"Content-Type: application/json"</span> \\
-  -d <span class="str">'{{"input": "Hello world", "model": "{MODEL_NAME}"}}'</span></pre>
-  <footer>
-    Built for <a href="https://github.com/bayerhazard/aimighty-embedder" target="_blank" rel="noopener">Olares</a> &middot;
-    <a href="https://huggingface.co/Qwen/Qwen3-Embedding-4B" target="_blank" rel="noopener">Qwen3-Embedding-4B</a> &middot;
-    <a href="https://docs.openvino.ai/" target="_blank" rel="noopener">OpenVINO 2026</a>
-  </footer>
-</div>
-</body>
-</html>"""
+    mode_label = "Cluster (2 Worker)" if is_cluster else "Single Node (1 Worker)"
+    try:
+        with open("/app/dashboard.html", encoding="utf-8") as fh:
+            html = fh.read()
+    except FileNotFoundError:
+        html = "<!DOCTYPE html><html><body><h1>Embedder</h1></body></html>"
+    replacements = {
+        "__STATUS_CLASS__": status_color,
+        "__STATUS_TEXT__": status_text,
+        "__MODEL__": MODEL_NAME,
+        "__DEVICE__": device,
+        "__MODE__": mode_label,
+        "__MAXTOKENS__": str(MAX_LENGTH),
+    }
+    for key, val in replacements.items():
+        html = html.replace(key, val)
     return HTMLResponse(content=html)
 
 
 @app.get("/health")
+
 def health():
     status = "ready" if _model_ready else "loading"
     return {"status": status}
