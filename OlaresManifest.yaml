@@ -9,22 +9,22 @@ workloadReplicas:
 metadata:
   name: aimembqwen3vino
   icon: https://raw.githubusercontent.com/bayerhazard/aimighty-embedder/main/icon.png
-  description: Qwen3-Embedding-4B INT8 via OpenVINO
+  description: Qwen3-Embedding-4B via OpenVINO on CPU — batched throughput, instruction support, Matryoshka dims
   appid: aimembqwen3vino
-  title: Qwen3 Embedding
-  version: '1.8.2'
+  title: AIM Qwen3 4B Embedding
+  version: '26.08.1'
   categories:
     - AI
 entrances:
   - name: aimembqwen3vino
     port: 9997
     host: aimembqwen3vino
-    title: Qwen3 Embedding
+    title: AIM Qwen3 4B Embedding
     icon: https://raw.githubusercontent.com/bayerhazard/aimighty-embedder/main/icon.png
     openMethod: window
     authLevel: internal
 spec:
-  versionName: '1.8.2'
+  versionName: '26.08.1'
   upgradeDescription: |
     v1.8.2: Fix Application-CR-owner (entrance 502 / leere Seite): das Chart setzte applications.app.bytetrade.io/owner fälschlich auf den App-Namen (Namespace-abgeleitet). Dadurch hatte die Application-CR spec.owner=aimembqwen3vino statt aimighty → app-service getAppEntrances fand die App nicht (Panic → 502), Gateway-Route fehlte (421/leere Seite). Owner-Label aus dem Deployment-Template entfernt (llama-Pattern — Webhook/Installer setzt owner=aimighty). Bestehende Installationen: Application-CR spec.owner + Deployment-Owner-Labels einmalig patchen.
     v1.8.1: Fix check-auth CrashLoopBackOff bei Frischinstallation — check-auth, render-envoy-config, olares-sidecar-init und olares-envoy-sidecar sind jetzt manuell im Chart definiert (check-auth mit command ["true"], damit der authelia-wait-for den Startup nicht bricht; awk statt sed im render-envoy-config). Webhook-Injection wird dadurch übersprungen. Modell/Quantisierung/Code unverändert.

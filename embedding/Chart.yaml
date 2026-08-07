@@ -1,9 +1,9 @@
 apiVersion: v2
 name: aimembqwen3vino
-description: Aimighty OpenVINO Embedder - OpenAI compatible embedding API with Intel GPU acceleration
+description: Qwen3-Embedding-4B via OpenVINO on CPU — batched throughput, instruction support, Matryoshka dims
 type: application
-version: 1.8.2
-appVersion: "1.8.2"
+version: 26.08.1
+appVersion: "26.08.1"
 keywords:
   - ai
   - embedding
