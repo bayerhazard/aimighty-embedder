@@ -12,7 +12,7 @@ metadata:
   description: Qwen3-Embedding-4B via OpenVINO on CPU — batched throughput, instruction support, Matryoshka dims
   appid: aimembqwen3vino
   title: AIM Qwen3 4B Embedding
-  version: '26.8.30'
+  version: '26.8.31'
   categories:
     - AI
 entrances:
@@ -24,9 +24,45 @@ entrances:
     openMethod: window
     authLevel: internal
 spec:
-  versionName: '26.8.30'
+  versionName: '26.8.31'
   upgradeDescription: |
+    26.8.31: Fix v3 install lint — Resource-Envelope (requiredCpu/limitedCpu/requiredMemory/limitedMemory/requiredDisk) wiederhergestellt (26.8.30-Install scheiterte am app-service lint).
     26.8.30: Initial Release for Olares One
+  fullDescription: |
+    Qwen3-Embedding-4B + OpenVINO on CPU, optimized for Olares One.
+
+    **Model**
+    Qwen/Qwen3-Embedding-4B — a 4-billion-parameter embedding model from Qwen, INT8 quantized via Optimum Intel for efficient inference on consumer hardware.
+
+    **Inference Engine**
+    OpenVINO 2026.2.1 + optimum-intel 2.0.0 + Hugging Face Transformers 4.55.4 (gepinnt, reproduzierbar). Runs on Intel Core Ultra iGPU (Arrow Lake-S) with automatic CPU fallback if the GPU is unavailable.
+
+    **Key Features**
+    - OpenAI-compatible API endpoints: /v1/embeddings, /v1/models, /health
+    - THROUGHPUT mode with batched inference (concurrent requests are coalesced into one forward pass)
+    - Cluster mode (EMBEDDER_MODE=cluster): 2 replicas spread across nodes via pod anti-affinity — uses both node CPUs
+    - Optional query-side instruction (Qwen instruct format) for better retrieval quality
+    - Optional Matryoshka dimension reduction (EMBED_DIM 32..2560)
+    - Async endpoints with race-condition protection for concurrent RAG workloads
+    - Built-in HTML dashboard on root endpoint (/)
+
+    **Resource Usage**
+    Single mode: ~24 GB RAM, 2 CPU cores
+    Cluster mode: ~48 GB RAM, 4 CPU cores (2 nodes)
+    Disk: 50 GB for model cache
+
+  developer: Aimighty
+  website: https://github.com/bayerhazard/aimighty-embedder
+  sourceCode: https://github.com/bayerhazard/aimighty-embedder
+  locale:
+    - en-US
+  supportArch:
+    - amd64
+  limitedCpu: 4
+  requiredCpu: 2
+  requiredMemory: 24Gi
+  limitedMemory: 24Gi
+  requiredDisk: 50Gi
 permission:
   appData: true
 options:
