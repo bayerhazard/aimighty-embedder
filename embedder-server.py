@@ -1,6 +1,6 @@
 import sys, os
 sys.path.insert(0, "/pypackages")
-import time, logging, asyncio, threading, ctypes
+import time, logging, asyncio, threading, ctypes, base64
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse, HTMLResponse
@@ -84,6 +84,35 @@ _tokenizer = None
 _infer_lock = threading.Lock()
 _model_ready = False
 
+_FONT_CACHE = {}
+
+def _font_face():
+    """Self-hosted Geist fonts (base64 woff2 from ./static, cached)."""
+    if "css" in _FONT_CACHE:
+        return _FONT_CACHE["css"]
+    base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+
+    def _b64(name):
+        with open(os.path.join(base, name), "rb") as f:
+            return base64.b64encode(f.read()).decode()
+
+    try:
+        css = (
+            "@font-face{font-family:'Geist';font-style:normal;font-weight:100 900;"
+            "font-display:swap;src:url(data:font/woff2;base64,"
+            + _b64('Geist-Variable.woff2')
+            + ") format('woff2')}\n"
+            "@font-face{font-family:'Geist Mono';font-style:normal;font-weight:100 900;"
+            "font-display:swap;src:url(data:font/woff2;base64,"
+            + _b64('GeistMono-Variable.woff2')
+            + ") format('woff2')}"
+        )
+        _FONT_CACHE["css"] = css
+    except OSError:
+        log.warning("Geist font files missing in ./static — dashboard falls back to system fonts")
+        _FONT_CACHE["css"] = ""
+    return _FONT_CACHE["css"]
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("FastAPI startup: warming up model...")
@@ -162,28 +191,27 @@ class EmbReq(BaseModel):
 @app.get("/", response_class=HTMLResponse)
 def root():
     """Browser landing page. API consumers use /v1/embeddings, /v1/models, /health."""
-    status_color = "ready" if _model_ready else "offline"
-    status_text = "Bereit" if _model_ready else "Modell wird geladen…"
+    status_color = "#caa960" if _model_ready else "#8fa3b8"
+    status_text_en = "Ready" if _model_ready else "Loading model…"
+    status_text_de = "Bereit" if _model_ready else "Modell wird geladen…"
     device = OV_DEVICE.upper()
     mode = os.getenv("EMBEDDER_MODE", "Single_Node")
     is_cluster = "cluster" in mode.lower()
-    mode_label = "Cluster (2 Worker)" if is_cluster else "Single Node (1 Worker)"
-    try:
-        with open("/app/dashboard.html", encoding="utf-8") as fh:
-            html = fh.read()
-    except FileNotFoundError:
-        html = "<!DOCTYPE html><html><body><h1>Embedder</h1></body></html>"
-    replacements = {
-        "__STATUS_CLASS__": status_color,
-        "__STATUS_TEXT__": status_text,
-        "__MODEL__": MODEL_NAME,
-        "__DEVICE__": device,
-        "__MODE__": mode_label,
-        "__MAXTOKENS__": str(MAX_LENGTH),
-    }
-    for key, val in replacements.items():
-        html = html.replace(key, val)
-    return HTMLResponse(content=html)
+    mode_label_en = "Cluster (2 nodes)" if is_cluster else "Single node"
+    mode_label_de = "Cluster (2 Nodes)" if is_cluster else "Einzeln"
+    from dashboard_html import render_dashboard
+    return HTMLResponse(content=render_dashboard(
+        model_ready=_model_ready,
+        model_name=MODEL_NAME,
+        device=device,
+        mode_label_en=mode_label_en,
+        mode_label_de=mode_label_de,
+        status_text_en=status_text_en,
+        status_text_de=status_text_de,
+        status_color=status_color,
+        max_length=MAX_LENGTH,
+        fonts_css=_font_face(),
+    ))
 
 
 @app.get("/health")

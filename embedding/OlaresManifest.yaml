@@ -12,7 +12,7 @@ metadata:
   description: Qwen3-Embedding-4B via OpenVINO on CPU — batched throughput, instruction support, Matryoshka dims
   appid: aimembqwen3vino
   title: AIM Qwen3 4B Embedding
-  version: '26.08.1'
+  version: '26.8.30'
   categories:
     - AI
 entrances:
@@ -24,77 +24,9 @@ entrances:
     openMethod: window
     authLevel: internal
 spec:
-  versionName: '26.08.1'
+  versionName: '26.8.30'
   upgradeDescription: |
-    v26.08.1: Unified naming — title "AIM Qwen3 4B Embedding", English descriptions. Built for Olares 1.12.6.
-    v1.8.2: Fix Application-CR-owner (entrance 502 / leere Seite): das Chart setzte applications.app.bytetrade.io/owner fälschlich auf den App-Namen (Namespace-abgeleitet). Dadurch hatte die Application-CR spec.owner=aimembqwen3vino statt aimighty → app-service getAppEntrances fand die App nicht (Panic → 502), Gateway-Route fehlte (421/leere Seite). Owner-Label aus dem Deployment-Template entfernt (llama-Pattern — Webhook/Installer setzt owner=aimighty). Bestehende Installationen: Application-CR spec.owner + Deployment-Owner-Labels einmalig patchen.
-    v1.8.1: Fix check-auth CrashLoopBackOff bei Frischinstallation — check-auth, render-envoy-config, olares-sidecar-init und olares-envoy-sidecar sind jetzt manuell im Chart definiert (check-auth mit command ["true"], damit der authelia-wait-for den Startup nicht bricht; awk statt sed im render-envoy-config). Webhook-Injection wird dadurch übersprungen. Modell/Quantisierung/Code unverändert.
-    v1.8.0: Performance & quality release (OpenVINO CPU, Modell unverändert INT8):
-      - Batch-Aggregator: parallele /v1/embeddings-Requests werden in EINEN Inferenz-Call zusammengefasst (~1.9x Durchsatz auf CPU, gemessen).
-      - Instruction-Support: optionaler "instruction"-Parameter im Request bzw. DEFAULT_INSTRUCTION-Env (Qwen-Instruct-Format "Instruct: {task}\nQuery:"), +1-5% Retrieval-Qualität.
-      - MRL-Support: EMBED_DIM-Env (32..2560) für reduzierte Vektordimension ohne Modellwechsel.
-      - Dependencies gepinnt (reproduzierbar): optimum-intel 2.0.0 (statt git@main), transformers 4.55.4, openvino 2026.2.1, torch 2.13.0, fastapi 0.141.1, uvicorn 0.52.1.
-      - OV-Config-Bug gefixt: PERFORMANCE_HINT/NUM_STREAMS-Env werden jetzt tatsächlich angewendet (waren vorher ignoriert, hartkodiert LATENCY/1).
-      - CPU_PINNING default YES (deterministisches Scheduling), INFERENCE_THREADS/MAX_LENGTH/BATCH_WINDOW_MS/INFER_TIMEOUT_SEC als Env konfigurierbar.
-      - Echter 2-Node-Cluster verdrahtet: EMBEDDER_MODE=cluster rendert jetzt 2 Replicas (pod anti-affinity, je 1 uvicorn-Worker) über beide Nodes; single = 1 Replica. Vorher: 2 Worker im selben Pod trotz "2 nodes"-Beschreibung.
-      - Lifecycle: on_event(startup) → lifespan (deprecation-frei).
-    v1.7.0: accelerator: [{mode: cpu}] im OlaresManifest ergänzt (app-service v3 AutoSelectMode: ohne accelerator-Deklaration → "No matching GPU type" 400, da ComputeResourceModes leer). CPU-Apps müssen den Modus explizit deklarieren.
-    v1.6.9: deployment.replicas auf .Values.workloads.aimembqwen3vino.replicaCount (v3-Validation).
-    v1.6.8: Olares-Dependency auf >=1.12.6-0 gesetzt (apiVersion v3 erfordert Olares 1.12.6+).
-    v1.6.7: Migrate OlaresManifest v2 → v3 (olaresManifest.version 0.10.0 → 0.12.0, apiVersion v2 → v3, workloadReplicas ergänzt). App-service auf Olares 1.12.6 lehnt apiVersion v2 ab ("app with apiVersion v2 is incompatible and cannot be install", HTTP 403).
-    v1.6.6: Version alignment — Chart/Chart-Manifest/Root-Manifest hatten 1.5.6/1.5.6/1.6.5 (Golden-Rule-Verletzung). Chart wird jetzt sauber aus dem embedding/-Ordner gepackt (vorher wurde das Repo-Root gezippt). Keine funktionalen Änderungen zu 1.6.5.
-    v1.5.6: Fixed rolling update strategy (maxSurge=0, maxUnavailable=1) to prevent pod anti-affinity deadlock on restart. Increased revisionHistoryLimit to 3 for rollback safety.
-    v1.5.1: Fixed app title to Qwen Embedding 4B for proper display in Olares Settings.
-    v1.2.8: Fixed env vars in chart OlaresManifest — now editable with dropdowns. Added MODEL_NAME.
-    v1.2.7: Made env vars editable in Olares UI. Added MODEL_NAME env. Renamed GPU option to iGPU.
-    v1.2.6: Updated app title to "AIM Qwen3 Emb 4B" and entrance label to "Embedder".
-    v1.2.5: Version bump to 1.2.5.
-    v1.2.0: Stable production release. All features tested and verified. v1.1.11: Added envs section to OlaresManifest for App Settings UI. Moved configurable environment variables (EMBEDDER_MODE, OV_DEVICE, PERFORMANCE_HINT, NUM_STREAMS) from env to olaresEnv so Olares can override them at install/runtime. Simplified deployment.yaml env rendering. v1.1.10: Fixed OlaresManifest version mismatch (was 1.1.9 in 1.1.10 chart). Removed progress field blocking Open button. — Reverted to clean working 1.1.3 structure. Removed nginx dashboard container and inline ConfigMap (embedder serves HTML natively on port 9997). Removed broken YAML indentation fixes. Fixed replicas template (no single-quotes). Removed dashboardPort. Kept models_cache hostPath persistence.
-    v1.1.8: Fixed startupProbe indentation (9→10 spaces) which caused YAML parse error. Single-quoted replicas template for safe YAML parsing.
-    v1.1.7: Fixed YAML indentation in deployment.yaml (volumes section). Bumped version to force Olares re-fetch.
-    v1.1.6: Bumped all versions to 1.1.6 for Olares consistency. Added hostPath persistence for /models_cache to prevent 4GB model re-download on every restart. Fixed Olares Store appData path.
-    v1.1.4: Added nginx dashboard container with HTML monitoring UI. Service now exposes port 8080 for dashboard access. Set livenessProbe initialDelay to 1200s for reliable startup.
-    v1.1.3: Fixed OlaresManifest structure to match Olares spec v0.10.0. Moved resource fields to spec section. Fixed manifest version compatibility.
-    v1.1.1: Fixed missing icon in installed apps. Added icon URL to entrances and switched to raw.githubusercontent.com CDN.
-    v1.1.0: Fixed TZ env type (int → string), reduced livenessProbe initialDelay from 30min to 5min, added resource limits to initContainer, cleaned up Dockerfile dependencies.
-    v1.0.4: Added openMethod: window to entrance config so dashboard opens in browser tab on click.
-    v1.0.2: Fixed Envoy upstream timeout. Replaced broken initContainer with kubectl-based ConfigMap patching (15s → 3600s). Added RBAC for ConfigMap access.
-    v1.0.1: Removed init-patcher relict, hostPath /dev/dri instead of GPU device plugin.
-  fullDescription: |
-    Qwen3-Embedding-4B + OpenVINO on CPU, optimized for Olares One.
-
-    **Model**
-    Qwen/Qwen3-Embedding-4B — a 4-billion-parameter embedding model from Qwen, INT8 quantized via Optimum Intel for efficient inference on consumer hardware.
-
-    **Inference Engine**
-    OpenVINO 2026.2.1 + optimum-intel 2.0.0 + Hugging Face Transformers 4.55.4 (gepinnt, reproduzierbar). Runs on Intel Core Ultra iGPU (Arrow Lake-S) with automatic CPU fallback if the GPU is unavailable.
-
-    **Key Features**
-    - OpenAI-compatible API endpoints: /v1/embeddings, /v1/models, /health
-    - THROUGHPUT mode with batched inference (concurrent requests are coalesced into one forward pass)
-    - Cluster mode (EMBEDDER_MODE=cluster): 2 replicas spread across nodes via pod anti-affinity — uses both node CPUs
-    - Optional query-side instruction (Qwen instruct format) for better retrieval quality
-    - Optional Matryoshka dimension reduction (EMBED_DIM 32..2560)
-    - Async endpoints with race-condition protection for concurrent RAG workloads
-    - Built-in HTML dashboard on root endpoint (/)
-
-    **Resource Usage**
-    Single mode: ~24 GB RAM, 2 CPU cores
-    Cluster mode: ~48 GB RAM, 4 CPU cores (2 nodes)
-    Disk: 50 GB for model cache
-
-  developer: Aimighty
-  website: https://github.com/bayerhazard/aimighty-embedder
-  sourceCode: https://github.com/bayerhazard/aimighty-embedder
-  locale:
-    - en-US
-  supportArch:
-    - amd64
-  limitedCpu: 4
-  requiredCpu: 2
-  requiredMemory: 24Gi
-  limitedMemory: 24Gi
-  requiredDisk: 50Gi
+    26.8.30: Initial Release for Olares One
 permission:
   appData: true
 options:
