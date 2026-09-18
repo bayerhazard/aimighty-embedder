@@ -12,7 +12,7 @@ metadata:
   description: Qwen3-Embedding-4B via OpenVINO on CPU — batched throughput, instruction support, Matryoshka dims
   appid: aimembqwen3vino
   title: AIM Qwen3 4B Embedding
-  version: '26.8.31'
+  version: '26.9.1'
   categories:
     - AI
 entrances:
@@ -24,10 +24,9 @@ entrances:
     openMethod: window
     authLevel: internal
 spec:
-  versionName: '26.8.31'
+  versionName: '26.9.1'
   upgradeDescription: |
-    26.8.31: Fix v3 install lint — Resource-Envelope (requiredCpu/limitedCpu/requiredMemory/limitedMemory/requiredDisk) wiederhergestellt (26.8.30-Install scheiterte am app-service lint).
-    26.8.30: Initial Release for Olares One
+    Initial Release for AImighty Olares One
   fullDescription: |
     Qwen3-Embedding-4B + OpenVINO on CPU, optimized for Olares One.
 
