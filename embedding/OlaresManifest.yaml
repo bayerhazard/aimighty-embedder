@@ -12,7 +12,7 @@ metadata:
   description: Qwen3-Embedding-4B via OpenVINO on CPU — batched throughput, instruction support, Matryoshka dims
   appid: aimembqwen3vino
   title: AIM Qwen3 4B Embedding
-  version: '26.10.1'
+  version: '26.10.2'
   categories:
     - AI
 sharedEntrances:
@@ -32,10 +32,10 @@ entrances:
     openMethod: window
     authLevel: internal
 spec:
-  versionName: '26.10.1'
+  versionName: '26.10.2'
   onlyAdmin: true
   upgradeDescription: |
-    v26.10.1: Olares Router integration. A beclab/llm-init sidecar now fronts the app (ENGINE_KIND=embed, MODEL_MODE=embedding) and exposes the Model Console contract (/api/model-spec on the shared entrance), so Router auto-registers the model and fills default-embedding. The OpenVINO inference engine on :9997 is untouched; llm-init only reverse-proxies the OpenAI /v1/models + /v1/embeddings contract to it. Model source moved to shared (`shared: true`), so this is an uninstall + install, not an in-place upgrade. Built for Olares 1.12.7.
+    v26.10.2: Olares Router integration (llm-init embed proxy). Recreate update strategy (hostPath cache volumes require it; RollingUpdate is rejected by the app-service). A beclab/llm-init sidecar now fronts the app (ENGINE_KIND=embed, MODEL_MODE=embedding) and exposes the Model Console contract (/api/model-spec on the shared entrance), so Router auto-registers the model and fills default-embedding. The OpenVINO inference engine on :9997 is untouched; llm-init only reverse-proxies the OpenAI /v1/models + /v1/embeddings contract to it. Model source moved to shared (`shared: true`), so this is an uninstall + install, not an in-place upgrade. Built for Olares 1.12.7.
   fullDescription: |
     Qwen3-Embedding-4B + OpenVINO on CPU, optimized for Olares One.
 

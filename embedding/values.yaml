@@ -10,10 +10,7 @@ workloads:
     replicaCount: 1
 containerPort: 9997
 strategy:
-  type: RollingUpdate
-  rollingUpdate:
-    maxSurge: 0
-    maxUnavailable: 1
+  type: Recreate
 resources:
   limits:
     cpu: '8'
@@ -88,3 +85,5 @@ kubeletCidrs:
 # Userspace paths (overridden by Olares at install time)
 userspace:
   appData: "/olares/rootfs/userspace/pvc-userspace-aimighty-phbiddku99qy4cuz"
+  appCommon: "/olares/rootfs/Common"
+  appCache: "/olares/userdata/Cache"
