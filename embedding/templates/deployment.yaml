@@ -69,6 +69,41 @@ spec:
             nvidia.com/gpu: "0"
           requests:
             nvidia.com/gpu: "0"
+      # kubelet / health checks + Model Console must reach llm-init :8090 through
+      # the envoy inbound redirect (same fix the reranker uses).
+      - name: fix-kubelet-bypass
+        image: beclab/init:v1.2.3
+        imagePullPolicy: IfNotPresent
+        command:
+        - /bin/sh
+        - -c
+        - |
+          iptables -t nat -N PROXY_INBOUND 2>/dev/null || true
+          for cidr in {{ join " " .Values.kubeletCidrs }}; do
+            iptables -t nat -I PROXY_INBOUND 1 -s "$cidr" -j RETURN
+          done
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+            - NET_RAW
+        resources: {}
+      # llm-init runs as UID 1000 and must own its shared cache + run dirs.
+      - name: init-chown
+        image: docker.io/beclab/aboveos-busybox:1.37.0
+        imagePullPolicy: IfNotPresent
+        command:
+        - sh
+        - -c
+        - "mkdir -p /cache/hf/hub/.locks /run/llm-init && chown -R 1000:1000 /cache/hf/hub /run/llm-init || true"
+        volumeMounts:
+        - name: llm-init-cache
+          mountPath: /cache/hf/hub
+        - name: llm-init-run
+          mountPath: /run/llm-init
+        securityContext:
+          runAsUser: 0
+        resources: {}
       {{- if or (eq (.Values.olaresEnv.EMBEDDER_MODE | default "cluster") "cluster") (eq .Values.olaresEnv.EMBEDDER_MODE "Cluster_Mode") }}
       # cluster mode: spread pods across both nodes
       affinity:
@@ -169,6 +204,72 @@ spec:
           volumeMounts:
           - mountPath: /config
             name: envoy-config
+        # Model Console front proxy (Engine untouched): exposes /api/model-spec +
+        # OpenAI /v1/models,/v1/embeddings; reverse-proxies to the embedder on 9997.
+        - name: llm-init
+          image: "{{ .Values.llmInit.image }}"
+          imagePullPolicy: IfNotPresent
+          env:
+          - name: ENGINE_KIND
+            value: "embed"
+          - name: LLM_INIT_TEST_ENGINE_URL
+            value: "{{ .Values.llmInit.engineUrl }}"
+          - name: MODEL_NAME
+            value: "{{ .Values.llmInit.modelName }}"
+          - name: MODEL_MODE
+            value: "embedding"
+          - name: MODEL_SUPPORTS
+            value: ""
+          - name: MODEL_SOURCE
+            value: "{{ .Values.llmInit.modelSource }}"
+          - name: HF_HOME
+            value: /cache/hf
+          - name: HF_HUB_CACHE
+            value: /cache/hf/hub
+          - name: HUGGINGFACE_HUB_CACHE
+            value: /cache/hf/hub
+          {{- if .Values.olaresEnv.HF_ENDPOINT }}
+          - name: HF_ENDPOINT
+            value: "{{ .Values.olaresEnv.HF_ENDPOINT }}"
+          {{- end }}
+          {{- if .Values.olaresEnv.HF_TOKEN }}
+          - name: HF_TOKEN
+            value: "{{ .Values.olaresEnv.HF_TOKEN }}"
+          {{- end }}
+          - name: RUN_DIR
+            value: /run/llm-init
+          - name: PORT
+            value: "{{ .Values.llmInit.port }}"
+          - name: LOG_LEVEL
+            value: "info"
+          ports:
+          - containerPort: {{ .Values.llmInit.port }}
+          readinessProbe:
+            httpGet:
+              path: /livez
+              port: {{ .Values.llmInit.port }}
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: {{ .Values.llmInit.port }}
+            periodSeconds: 30
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 4Gi
+          volumeMounts:
+          - name: llm-init-cache
+            mountPath: /cache/hf/hub
+          - name: llm-init-run
+            mountPath: /run/llm-init
       volumes:
         - name: app-envoy-config
           emptyDir: {}
@@ -178,3 +279,11 @@ spec:
           configMap:
             name: olares-sidecar-config-{{ include "aimembqwen3vino.fullname" . }}
             defaultMode: 420
+        - name: llm-init-cache
+          hostPath:
+            path: "{{ .Values.userspace.appCommon }}/huggingface"
+            type: DirectoryOrCreate
+        - name: llm-init-run
+          hostPath:
+            path: "{{ .Values.userspace.appCache }}/llm-init-run/aimembqwen3vino"
+            type: DirectoryOrCreate

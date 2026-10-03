@@ -74,6 +74,17 @@ service:
   type: ClusterIP
   port: 9997
 
+# Router / Model Console integration (llm-init front proxy). The embedder engine
+# stays untouched on :9997; llm-init only fronts the OpenAI embedding contract.
+llmInit:
+  image: docker.io/beclab/llm-init:v1.7.12
+  port: 8090
+  engineUrl: http://127.0.0.1:9997
+  modelName: aimighty-embedding-4b
+  modelSource: hf://Qwen/Qwen3-Embedding-4B
+kubeletCidrs:
+  - 172.20.0.0/16
+
 # Userspace paths (overridden by Olares at install time)
 userspace:
   appData: "/olares/rootfs/userspace/pvc-userspace-aimighty-phbiddku99qy4cuz"

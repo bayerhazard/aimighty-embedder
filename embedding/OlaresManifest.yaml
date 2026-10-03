@@ -12,21 +12,30 @@ metadata:
   description: Qwen3-Embedding-4B via OpenVINO on CPU — batched throughput, instruction support, Matryoshka dims
   appid: aimembqwen3vino
   title: AIM Qwen3 4B Embedding
-  version: '26.9.1'
+  version: '26.10.1'
   categories:
     - AI
+sharedEntrances:
+  - name: aimembqwen3vino
+    host: sharedentrances-api
+    port: 0
+    title: AIM Qwen3 4B Embedding
+    invisible: true
+    authLevel: internal
+    icon: https://raw.githubusercontent.com/bayerhazard/aimighty-embedder/main/icon.png
 entrances:
   - name: aimembqwen3vino
-    port: 9997
-    host: aimembqwen3vino
+    port: 8090
+    host: download-svc
     title: AIM Qwen3 4B Embedding
     icon: https://raw.githubusercontent.com/bayerhazard/aimighty-embedder/main/icon.png
     openMethod: window
     authLevel: internal
 spec:
-  versionName: '26.9.1'
+  versionName: '26.10.1'
+  onlyAdmin: true
   upgradeDescription: |
-    Initial Release for AImighty Olares One
+    v26.10.1: Olares Router integration. A beclab/llm-init sidecar now fronts the app (ENGINE_KIND=embed, MODEL_MODE=embedding) and exposes the Model Console contract (/api/model-spec on the shared entrance), so Router auto-registers the model and fills default-embedding. The OpenVINO inference engine on :9997 is untouched; llm-init only reverse-proxies the OpenAI /v1/models + /v1/embeddings contract to it. Model source moved to shared (`shared: true`), so this is an uninstall + install, not an in-place upgrade. Built for Olares 1.12.7.
   fullDescription: |
     Qwen3-Embedding-4B + OpenVINO on CPU, optimized for Olares One.
 
@@ -44,6 +53,7 @@ spec:
     - Optional Matryoshka dimension reduction (EMBED_DIM 32..2560)
     - Async endpoints with race-condition protection for concurrent RAG workloads
     - Built-in HTML dashboard on root endpoint (/)
+    - Olares Router: registered as a local embedding model via Model Console auto-detection (fills default-embedding) — OpenAI-compatible /v1/embeddings through the Router gateway
 
     **Resource Usage**
     Single mode: ~24 GB RAM, 2 CPU cores
@@ -64,14 +74,29 @@ spec:
   requiredDisk: 50Gi
 permission:
   appData: true
+  appCache: true
+  appCommon: true
 options:
   apiTimeout: 3600
+  LLMGatewaySupported: true
+  shared: true
+  templateOnly: false
   dependencies:
     - name: olares
       version: '>=1.12.6-0'
       type: system
   allowMultipleInstall: false
 envs:
+  - envName: HF_ENDPOINT
+    required: false
+    applyOnChange: false
+    valueFrom:
+      envName: OLARES_SYSTEM_HUGGINGFACE_ENDPOINT
+  - envName: HF_TOKEN
+    required: false
+    applyOnChange: false
+    valueFrom:
+      envName: OLARES_USER_HUGGINGFACE_TOKEN
   - envName: EMBEDDER_MODE
     required: false
     default: "cluster"

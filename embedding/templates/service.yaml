@@ -14,3 +14,37 @@ spec:
       name: http
   selector:
     app: aimembqwen3vino
+---
+# Model Console control/data plane (llm-init): engine /v1/* reverse-proxied.
+apiVersion: v1
+kind: Service
+metadata:
+  name: download-svc
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: aimembqwen3vino
+spec:
+  selector:
+    app: aimembqwen3vino
+  ports:
+  - name: http
+    port: 8090
+    targetPort: 8090
+    protocol: TCP
+---
+# Service behind the sharedEntrances stub: :80 -> llm-init:8090 (in-cluster only).
+apiVersion: v1
+kind: Service
+metadata:
+  name: sharedentrances-api
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: aimembqwen3vino
+spec:
+  selector:
+    app: aimembqwen3vino
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8090
+    protocol: TCP
