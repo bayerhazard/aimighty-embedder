@@ -16,7 +16,7 @@ resources:
     cpu: '8'
     memory: 24Gi
   requests:
-    cpu: '2'
+    cpu: '1500m'
     memory: 8Gi
 env:
   TZ: Etc/UTC

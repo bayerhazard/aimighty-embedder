@@ -12,7 +12,7 @@ metadata:
   description: Qwen3-Embedding-4B via OpenVINO on CPU — batched throughput, instruction support, Matryoshka dims
   appid: aimembqwen3vino
   title: AIM Qwen3 4B Embedding
-  version: '26.10.3'
+  version: '26.10.4'
   categories:
     - AI
 sharedEntrances:
@@ -32,7 +32,7 @@ entrances:
     openMethod: window
     authLevel: internal
 spec:
-  versionName: '26.10.3'
+  versionName: '26.10.4'
   onlyAdmin: true
   upgradeDescription: |
     v26.10.3: CPU request right-sized (requiredCpu 2 -> 1500m; measured load peak 4.3 cores on one replica, limit unchanged) to fit the worker node CPU-request budget. No behavior change. Built for Olares 1.12.7.
