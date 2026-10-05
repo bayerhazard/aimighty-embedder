@@ -2,8 +2,8 @@ apiVersion: v2
 name: aimembqwen3vino
 description: Qwen3-Embedding-4B via OpenVINO on CPU — batched throughput, instruction support, Matryoshka dims
 type: application
-version: 26.10.2
-appVersion: "26.10.2"
+version: 26.10.3
+appVersion: "26.10.3"
 keywords:
   - ai
   - embedding
